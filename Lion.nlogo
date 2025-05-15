@@ -30,6 +30,7 @@ breed [lions lion]
 ; - firstimeatacked?: is the first time (of each attack) that the wildebeest notice the predator?
 ; Assumption: a wildebeest die if spend to much time alone (herd effect)
 wildebeests-own [sex target waitforleadership leadership? flockmates nearest-neighbor status crossing? timealone firsttimeattacked?]
+lions-own [status waitingtime accelerationtime]
 
 ;------------------------------ Setup functions -------------------------------
 ; Functions to setup the environment (background and parameters)
@@ -53,11 +54,11 @@ to setup
   ; Set firstleader? as initially false
   set firstleader? true
   ; Call to lions generator
-  ;lions-generator
+  lions-generator
   ; Reset ticks to start a new simulation
   reset-ticks
 end
-; ------------------------- CREAZIONE GNUS ----------------------------------
+; ------------------------- CREAZIONE ANIMALI ----------------------------------
 ;; genera un gruppo di gnu (posizionamento normale nel box passato)
 to wildebeest-generator [box]
   set-default-shape wildebeests "cow"
@@ -76,11 +77,6 @@ to wildebeest-generator [box]
       set size 2.5
       set color black
       set status 0
-      ;; sesso distribuito  (0=femmine,1=maschi,2=cuccioli)
-      let prob random 100.0
-      ifelse prob <= 22 [ set sex 2 ]     ; 22 % cuccioli
-      [ ifelse prob <= 49.5 [ set sex 1 ] ; 27.5 % maschi
-        [ set sex 0 ] ]                   ; 50.5 % femmine
 
       set waitforleadership 0
       set leadership? false
@@ -101,86 +97,41 @@ to wildebeest-generator [box]
   ]
 end
 
-
+to lions-generator
+  ; Default shape
+  set-default-shape lions "wolf"
+  if lions? [
+    ; if lions? is true (lions presence true) create them
+    ask n-of lions-number patches with [on-water? = false and count wildebeests in-radius 30 < 1 and pxcor > -50] [
+      sprout-lions 1 [
+        ; Default characteristics and parameters value
+        set size 2
+        set color yellow
+        set status 0
+        set accelerationtime 0
+        set waitingtime 0
+        ; if too much near to the water move the lion away
+        if (count patches with [on-water?] in-radius 5 > 0) [
+          move-to one-of patches with [count patches with [on-water? = false] in-radius 5 = 0]
+        ]
+      ]
+    ]
+  ]
+end
 ;-------------------------------- Go functions --------------------------------
 ; Functions to handle simulation tick by tick
 
 ; Ticks function --> "main"
 to go
-  ; Create the herd (with sub-herds if existent)
-  if wildebeests-number = 100 [
-    set wildebeests-sub-herds 1
-  ]
-  if wildebeests-number = 200 and wildebeests-sub-herds = 3 [
-    set wildebeests-sub-herds 2
-  ]
-  let sub-herds-size 0 ;all wildebeests in a single herd
-  let lastsubherdsbigger? false
-  ; Compute sub-herds size with known number of sub-herds
-  if wildebeests-sub-herds > 1 [
-    set sub-herds-size (wildebeests-number / wildebeests-sub-herds)
-    if sub-herds-size mod 100 != 0 and sub-herds-size + 50 < ((ceiling (sub-herds-size / 100)) * 100) [
-      ; last sub-herds has to be bigger then the others
-      set lastsubherdsbigger? true
-    ]
-    if sub-herds-size mod 100 != 0 [
-      ; Round to next hundred
-      set sub-herds-size ((round (sub-herds-size / 100)) * 100)
-    ]
-  ]
-  ; Call to create-herd function
-  create-herd (sub-herds-size) (lastsubherdsbigger?)
-  ; If no turtles alive stop the simulation
   if not any? turtles [ stop ]
   ; Call to go function for wildebeests
   go-wildebeests
   ; Call to go function for wildebeests
-  ;go-lions
+  go-lions
   tick
 end
 
-; Function to create the herd of wildebeests. Creates as many sub-herds as wildebeests-sub-herds value
-; Herd: all the wildebeests
-; Group: group of 100k widlebeests
-;  - create more group of 100k to simulate a herd already in movement
-; Sub-Herd: 1 or more group of wildebeests
-;  - in each sub-herd group generated every 100 ticks
-;  - each sub-herd is generated every 200 ticks
-to create-herd [sub-herds-size last-sub-herds-bigger?]
-  ifelse wildebeests-sub-herds = 1 [
-    ; if a single herd
-    let num 100 ;num: ticks between each group
-    if ticks > 0 and ticks mod num = 0 and cont < wildebeests-number / 100 [
-      let patches-in-box patches with [pxcor > 100 and pycor < -100 ]
-      ; Call to wildebeests group generator function
-      wildebeest-generator patches-in-box
-      set cont cont + 1
-    ]
-  ][
-    ; else (more sub-herds)
-    let new-sub-herds? false
-    if (cont * 100) mod sub-herds-size = 0 [
-      set new-sub-herds? true
-    ]
-    let num 100 ;100 ticks between each group
-    ; Time for a new-sub-herds?
-    if new-sub-herds? [
-      set num 2000 + (sub-herds-size * 4);
-    ]
-    if last-sub-herds-bigger? [
-      if (cont * 100) + sub-herds-size >= wildebeests-number [
-        set num 100
-      ]
-    ]
-    if ticks > 0 and ticks mod num = 0 and cont < wildebeests-number / 100 [
-      let patches-in-box patches with [pxcor > 100 and pycor < -100 ]
-      wildebeest-generator patches-in-box
-      set cont cont + 1
-    ]
-  ]
-end
-
-; ---------------------- COMPORTAMENTO DEGLI GNU ---------------------------
+; ---------------------- COMPORTAMENTO DEGLI ANIMALI ---------------------------
 to go-wildebeests
   ask wildebeests [
     if status = 0 [
@@ -190,6 +141,179 @@ to go-wildebeests
         ]
     ]
 end
+
+; Go function for lions
+to go-lions
+  ask lions [
+    ; Assumption: no lions on water
+    if count patches in-radius 5 with [on-water?] > 0 [
+      ; If close to water change directory
+      fd -0.2
+      set heading (heading + (random-int-between -10 10))
+      fd 0.1
+    ]
+    if on-water? [
+      move-to one-of (patches with [on-water? = false])
+      set heading (heading + (random-int-between -150 -210 ))
+      fd 0.1
+    ]
+    ; Status 0: relax, random walk before a alert
+    if status = 0 [
+      rt random-int-between -10 10
+      fd 0.03
+      ; Check for a possible alert
+      let possiblewildebeest one-of wildebeests in-radius 50
+      if possiblewildebeest != nobody [
+        ; if alert
+        face possiblewildebeest
+        set status 1
+      ]
+    ]
+    ; Status 1: alerted, face the possible prey and slowly try to get near to it/them
+    ; OBS: not a real ambush, cause when wildebeests migrate they're too much annd they also ignore more predators
+    if status = 1 [
+      let possiblewildebeest one-of wildebeests in-radius 50
+      ; If alert is real
+      ifelse possiblewildebeest != nobody [
+        face possiblewildebeest
+        fd 0.05
+        ; Prey targeting: check for a probable prey
+        let probablewildebeest one-of (wildebeests with [count wildebeests in-radius 2 < 3]) in-radius 12
+        if probablewildebeest != nobody [
+          face probablewildebeest
+          set status 2
+        ]
+        if count wildebeests in-radius 3 > 3 [
+          ; theorically is IMPOSSIBLE from this state, keep it here to be sure
+          ; escape
+          rt 180
+          set status 4
+        ]
+      ][
+        ; false alert
+        set status 0
+      ]
+    ]
+    ; Status 2: targeting mode, near to on or more target prey, wait until try to attack
+    if status = 2 [
+      ; try to attack (if exist a real target: wildebeest in radius 5 with only 1 neighbor)
+      let prey one-of (wildebeests with [count wildebeests in-radius 2 < 2]) in-radius 12
+      ifelse prey != nobody [
+        ; Approach the target if is enough alone
+        face prey
+        fd 0.15
+        set status 3
+      ] [
+        ; Wait for attack
+        set waitingtime waitingtime + 1
+        let prey2 one-of wildebeests in-radius 5
+        if prey2 = nobody [
+          ; Prey no more killable --> wrong targeting
+          set status 1
+        ]
+        if waitingtime > 100 [
+          ; Impossible targeting, give up for the moment
+          set status 1
+          set waitingtime 0
+        ]
+      ]
+      if count wildebeests in-radius 3 > 3 [
+        ; escape
+        rt 180
+        set status 4
+      ]
+    ]
+    ; Status 3: try to kill
+    if status = 3 [
+      ; try to kill
+      set lionsattacks (lionsattacks + 1)
+      fd 0.2
+      let prey one-of wildebeests-on neighbors with [count wildebeests in-radius 2 < 2]
+      ifelse prey != nobody [
+        ; approach to the prey
+        face prey
+        fd 0.1
+        if [distance myself] of prey < 1 and count wildebeests in-radius 1 < 2 [
+          ; predation
+          ask prey [ die ]
+          set wildebeestseatenbylions wildebeestseatenbylions + 1
+          set status 6
+        ]
+      ] [
+        set status 2
+      ]
+      set accelerationtime accelerationtime + 1
+      if accelerationtime > 100 [
+        rt 180
+        ; Tired, stop the attack and go away
+        set status 7
+      ]
+      if count wildebeests in-radius 3 > 3 [
+        ; escape
+        rt 180
+        set status 4
+      ]
+    ]
+    ; Status 4: escape mode, warned from to many wildebeest choose to run away a bit
+    if status = 4 [
+      ifelse count wildebeests in-radius 15 < 1 [
+        set status 1
+      ] [
+        ifelse count wildebeests in-radius 5 > 1 [
+          ; acceleration phase
+          fd 0.15
+        ] [
+          ; simply run
+          fd 0.08
+          ; one single wildebeest, try to catch him again
+          set status 1
+        ]
+      ]
+    ]
+    ; Status 5: escape from a big herd, but don't try to hunt again then
+    if status = 5 [
+      ifelse count wildebeests in-radius 15 < 1 [
+        set status 6
+      ] [
+        ifelse count wildebeests in-radius 5 > 1 [
+          fd 0.15
+        ][
+          fd 0.05
+        ]
+      ]
+    ]
+    ; Status 6: satiated, walk away
+    if status = 6 [
+      set color orange
+      fd 0.05
+      rt random-int-between -10 10
+      if count wildebeests in-radius 3 > 3 [
+        ; escape
+        rt 180
+        set status 5
+      ]
+    ]
+    ; Status 7: failed attack, go away and try again later
+    if status = 7 [
+      fd 0.05
+      rt random-int-between -10 10
+      if count wildebeests in-radius 3 > 3 [
+        ;escape
+        rt 180
+        set status 4
+      ]
+      if count wildebeests in-radius 10 = 0 [
+        ; normal status
+        set status 0
+      ]
+    ]
+    ; Handle lions life
+    if count wildebeests-on neighbors > 4 [
+      die
+    ]
+  ]
+end
+
 
 ; --------------------------- BOIDS / FLOCKING ------------------------------
 to to-flock [a b c d]
@@ -309,21 +433,6 @@ wildebeests-number
 NIL
 HORIZONTAL
 
-SLIDER
-0
-71
-172
-104
-wildebeests-sub-herds
-wildebeests-sub-herds
-0
-100
-1.0
-1
-1
-NIL
-HORIZONTAL
-
 BUTTON
 538
 516
@@ -357,6 +466,32 @@ NIL
 NIL
 NIL
 1
+
+SWITCH
+0
+66
+103
+99
+lions?
+lions?
+0
+1
+-1000
+
+SLIDER
+0
+103
+172
+136
+lions-number
+lions-number
+0
+10
+5.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
