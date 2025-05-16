@@ -449,27 +449,6 @@ to go-lionesses
       ; tenta di uccidere
       set lionsattacks (lionsattacks + 1)
       fd 0.2
-      ifelse group-target != nobody [
-        ifelse not dead? group-target [
-          face group-target
-          fd 0.1
-          if distance group-target < 1 and count wildebeests in-radius 1 < 2 [
-            ask group-target [
-              die
-            ]
-            set wildebeestseatenbylions wildebeestseatenbylions + 1
-            set color red  ; (opzionale, per vedere chi ha colpito)
-            set group-target nobody
-            set status 6
-          ]
-        ] [
-          ; la preda è già morta
-          set group-target nobody
-          set status 0
-        ]
-      ] [
-        set status 2
-      ]
 
 
 
