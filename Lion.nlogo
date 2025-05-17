@@ -43,7 +43,7 @@ to setup
   ask patches [ set pcolor brown + 2 ]
 
   ; Global variables handler
-  ;modify-vars
+  modify-vars
   ; Define wildebeests default area
   let patches-in-box patches with [pxcor > 100 and pycor < -100 ] ;100 -100
   ; Set number of initial sub-group (100k each subgroup) of wildebeests
@@ -155,9 +155,120 @@ to lionesses-generator
     ]
   ]
 end
-
-
-
+;--------------------------------SETUP STAGIONI-------------------------------
+to modify-vars
+  ifelse constraints? [
+    ; If constraints are on
+    ; month --> rain
+     if month = "January" [
+      set rain-level 3 ;work only when someone click "setup"
+      output-print "Rain level changed to 3"
+    ]
+     if month = "February" [
+      set rain-level 3 ;work only when someone click "setup"
+      output-print "Rain level changed to 3"
+    ]
+     if month = "March" [
+      set rain-level 3 ;work only when someone click "setup"
+      output-print "Rain level changed to 3"
+    ]
+     if month = "April" [
+      set rain-level 2 ;work only when someone click "setup"
+      output-print "Rain level changed to 2"
+    ]
+     if month = "May" [
+      set rain-level 2 ;work only when someone click "setup"
+      output-print "Rain level changed to 2"
+    ]
+    if month = "June" [
+      set rain-level 1 ;work only when someone click "setup"
+      output-print "Rain level changed to 1"
+    ]
+    if month = "July" [
+      set rain-level 1 ;work only when someone click "setup"
+      output-print "Rain level changed to 1"
+    ]
+    if month = "August" [
+      set rain-level 1 ;work only when someone click "setup"
+      output-print "Rain level changed to 1"
+    ]
+    if month = "September" [
+      set rain-level 2 ;work only when someone click "setup"
+      output-print "Rain level changed to 2"
+    ]
+    if month = "October" [
+      set rain-level 2 ;work only when someone click "setup"
+      output-print "Rain level changed to 2"
+    ]
+    if month = "November" [
+      set rain-level 3 ;work only when someone click "setup"
+      output-print "Rain level changed to 3"
+    ]
+    if month = "December" [
+      set rain-level 3 ;work only when someone click "setup"
+      output-print "Rain level changed to 3"
+    ]
+    ; rain --> river-flow
+    if rain-level = 1 [
+      set river-flow 1
+      output-print "River flow level changed to 1"
+    ]
+    if rain-level = 2 and river-flow = 4 [ ;error
+      set river-flow 2 ;or 1 or 3
+      output-print "River flow level can't be 4 with rain level 2. River flow changed to 2, can be also 1 or 3)"
+    ]
+    if rain-level = 3  and river-flow = 1 [
+      set river-flow 2;
+      output-print "River flow level can't be 1 with rain level 3. River flow changed to 2, can be also 3 or 4"
+    ]
+    ; flow --> [depth, width, speed]
+    if river-flow = 1 [
+      set river-depth 1
+      set river-width 1
+      set river-speed 1
+      output-print "River depth, width and speed levels changed"
+    ]
+    if river-flow = 2 and river-depth = 3 [ ;and (river-width = 3) and (river-speed = 3) [
+      set river-depth 2 ;or 1
+      output-print "River depth level cann't be 3 with river flow level 2. River depth changed to 2, can be also 1"
+    ]
+    if river-flow = 2 and river-width = 3 [
+      set river-width 2 ;or 1
+      output-print "River width level cannot be 3 with river flow level 2. River width changed to 2, can be also 1"
+    ]
+    if river-flow = 2 and river-speed = 3 [
+      set river-speed 2 ;or 1
+      output-print "River speed level cannot be 3 with river flow level 2. River speed changed to 2, can be also 1"
+    ]
+    if river-flow = 3 [
+      set river-depth 2
+      set river-width 3
+      set river-speed 2
+      output-print "River depth, width and speed levels changed"
+    ]
+    if river-flow = 4 [
+      set river-depth 3
+      set river-width 3
+      set river-speed 3
+      output-print "River depth, width and speed levels changed"
+    ]
+  ] [
+    ; else, if contstraints are off, check only width and depth
+    output-print "Constraints off: only width and depth checked"
+    if river-width = 1 and river-depth != 1 and river-depth != 2 [
+      set river-depth 2
+      output-print "River depth changed in according with river-width"
+    ]
+    if river-width = 2 and river-depth != 1 and river-depth != 2 [
+      set river-depth 2
+      output-print "River depth changed in according with river-width"
+    ]
+    if river-width = 3 and river-depth != 2 and river-depth != 3 [
+      set river-depth 3
+      output-print "River depth changed in according with river-width"
+    ]
+  ]
+end
 ;--------------------------------CREAZIONE ERBA-------------------------------
 
 to grass-generator
@@ -656,10 +767,10 @@ ticks
 30.0
 
 SLIDER
-9
-22
-181
-55
+0
+10
+172
+43
 wildebeests-number
 wildebeests-number
 0
@@ -671,10 +782,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-538
-516
-601
-549
+698
+10
+761
+43
 Setup
 setup
 NIL
@@ -688,10 +799,10 @@ NIL
 1
 
 BUTTON
-315
-546
-378
-579
+760
+10
+823
+43
 Go
 go
 T
@@ -706,9 +817,9 @@ NIL
 
 SWITCH
 0
-66
+44
 103
-99
+77
 lions?
 lions?
 0
@@ -717,9 +828,9 @@ lions?
 
 SLIDER
 0
-103
+78
 172
-136
+111
 lions-number
 lions-number
 0
@@ -732,9 +843,9 @@ HORIZONTAL
 
 SWITCH
 0
-259
+184
 109
-292
+217
 high-grass
 high-grass
 0
@@ -743,9 +854,9 @@ high-grass
 
 SWITCH
 0
-153
+114
 106
-186
+147
 lionesses?
 lionesses?
 0
@@ -754,14 +865,110 @@ lionesses?
 
 SLIDER
 0
-199
-172
-232
+151
+121
+184
 lionesses-number
 lionesses-number
 2
 6
 6.0
+1
+1
+NIL
+HORIZONTAL
+
+CHOOSER
+0
+217
+125
+262
+month
+month
+"January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"
+11
+
+SWITCH
+0
+264
+124
+297
+constraints?
+constraints?
+0
+1
+-1000
+
+SLIDER
+0
+299
+125
+332
+rain-level
+rain-level
+1
+3
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+333
+172
+366
+river-flow
+river-flow
+1
+4
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+367
+172
+400
+river-width
+river-width
+1
+3
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+698
+47
+870
+80
+river-depth
+river-depth
+1
+3
+2.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+699
+82
+871
+115
+river-speed
+river-speed
+1
+3
+2.0
 1
 1
 NIL
