@@ -7,7 +7,7 @@
 ; - firstleader?: is the wildebeest a hypotetic first leader?
 ; - approachpoint: river approach point for the herd (first leader choose it)
 ; - lionsattacks: number of lion's attacks
-globals [wildebeestseatenbylions wildebeestseatenbycrocs wildebeestsdrowned cont crowding? firstleader? approachpoint lionsattacks]
+globals [wildebeestseatenbylions wildebeestseatenbycrocs wildebeestsdrowned cont crowding? firstleader? approachpoint lionsattacks upper-river lower-river]
 ;Define new turtle breed: Wildebeest, Lions
 breed [wildebeests wildebeest] ;[plural singolar]
 breed [lions lion]
@@ -44,12 +44,16 @@ to setup
 
   ; Global variables handler
   modify-vars
+  ;background
+  import-background
+  set upper-river max [pycor] of patches with [on-water?]
+  set lower-river min [pycor] of patches with [on-water?]
   ; Define wildebeests default area
   let patches-in-box patches with [pxcor > 100 and pycor < -100 ] ;100 -100
   ; Set number of initial sub-group (100k each subgroup) of wildebeests
   set cont 1
   ; Call to wildebeests generator with default area as parameter
-  wildebeest-generator (patches-in-box)
+  wildebeest-generator
   ; Set crowding? as initially false
   set crowding? false
   ; Set firstleader? as initially false
@@ -58,49 +62,124 @@ to setup
   lions-generator
   ; Call to lionesses generator
   lionesses-generator
-  ; Call to grass generator
-  ask patches [ grass-generator ]
   ; Reset ticks to start a new simulation
   reset-ticks
 end
+
+;to wildebeest-generator [start-x start-y]
+;  ;; Imposta la forma visuale
+;  set-default-shape wildebeests "cow"
+;  let pop wildebeests-number
+;
+;  ;; Crea tanti gnu quanti ne hai specificato in wildebeests-number
+;   create-wildebeests pop [
+;    loop [
+;      set size 2.5
+;      set color black
+;      set status 0
+;
+;      set waitforleadership 0
+;      set leadership? false
+;      set crossing?   false
+;      set timealone   0
+;      set firsttimeattacked? true
+;      set flockmates  no-turtles
+;
+;    ;; Posiziona lo gnu esattamente in (start-x, start-y)
+;    setxy start-x start-y
+;    ]
+;
+;    ;; Assicura che il turtle sia centrato sulla patch
+;    move-to patch-here
+;  ]
+;end
 ; ------------------------- CREAZIONE ANIMALI ----------------------------------
 ;; genera un gruppo di gnu (posizionamento normale nel box passato)
-to wildebeest-generator [box]
+;to wildebeest-generator
+;  let box random-box
+;  set-default-shape wildebeests "cow"
+;  let pop wildebeests-number                                    ; numero gnu da creare
+;  let ys [ pycor ] of box
+;  let xs [ pxcor ] of box
+;  let min-x min xs  let max-x max xs
+;  let min-y min ys  let max-y max ys
+;  let mid-x mean list min-x max-x
+;  let mid-y mean list min-y max-y
+;  let w max-x - min-x
+;  let h max-y - min-y
+;
+;  create-wildebeests pop [
+;    loop [
+;      set size 2.5
+;      set color black
+;      set status 0
+;
+;      set waitforleadership 0
+;      set leadership? false
+;      set crossing?   false
+;      set timealone   0
+;      set firsttimeattacked? true
+;      set flockmates  no-turtles
+;
+;      ;; posizione ~normale dentro il box
+;      let x random-normal mid-x (w / 6)
+;      if x > max-x [ set x max-x ]  if x < min-x [ set x min-x ]
+;      let y random-normal mid-y (h / 6)
+;      if y > max-y [ set y max-y ]  if y < min-y [ set y min-y ]
+;      setxy x y
+;      if not any? other turtles-here [ stop ]
+;    ]
+;    move-to patch-here
+;  ]
+;end
+
+;; genera un gruppo di gnu fra i due fiumi
+to wildebeest-generator
   set-default-shape wildebeests "cow"
-  let pop 100                                    ; numero gnu da creare
-  let ys [ pycor ] of box
-  let xs [ pxcor ] of box
-  let min-x min xs  let max-x max xs
-  let min-y min ys  let max-y max ys
-  let mid-x mean list min-x max-x
-  let mid-y mean list min-y max-y
-  let w max-x - min-x
-  let h max-y - min-y
+  let pop wildebeests-number                           ;; quante unità creare
+
+  ;; patch-centro: terra fra i due fiumi, non attaccata all’acqua
+  let centre one-of patches with [
+        between-rivers? and
+        count patches with [on-water?] in-radius 3 = 0
+      ]
+
+  ;; se (molto raramente) non ne trova, ripiega su una qualsiasi terra
+  if centre = nobody [ set centre one-of patches with [not on-water?] ]
+
+  let cx [pxcor] of centre
+  let cy [pycor] of centre
 
   create-wildebeests pop [
-    loop [
-      set size 2.5
-      set color black
-      set status 0
+    ;; ---------- attributi base ----------
+    set size              2.5
+    set color             black
+    set status            0
+    set waitforleadership 0
+    set leadership?       false
+    set crossing?         false
+    set timealone         0
+    set firsttimeattacked? true
+    set flockmates        no-turtles
+    ;; ------------------------------------
 
-      set waitforleadership 0
-      set leadership? false
-      set crossing?   false
-      set timealone   0
-      set firsttimeattacked? true
-      set flockmates  no-turtles
-
-      ;; posizione ~normale dentro il box
-      let x random-normal mid-x (w / 6)
-      if x > max-x [ set x max-x ]  if x < min-x [ set x min-x ]
-      let y random-normal mid-y (h / 6)
-      if y > max-y [ set y max-y ]  if y < min-y [ set y min-y ]
-      setxy x y
-      if not any? other turtles-here [ stop ]
+    ;; --- estrai finché ottieni una patch di terra valida ---
+    ;; --- estrai finché ottieni una patch di terra valida ---
+    let good? false
+    while [not good?] [
+      let x random-normal cx 5          ;; σ = 5 → compattezza del gruppo
+      let y random-normal cy 5
+      let p patch x y                   ;; p è la patch corrispondente
+      if p != nobody and not [on-water?] of p [
+        move-to p                       ;; posiziona lo gnu
+        set good? true
+      ]
     ]
-    move-to patch-here
-  ]
+
+    ]
 end
+
+
 
 to lions-generator
   ; Default shape
@@ -126,7 +205,7 @@ end
 
 to lionesses-generator
   if lionesses? [
-    set-default-shape lionesses "wolf"
+    set-default-shape lionesses "lion"
 
     ; Trova una zona adatta lontano dall'acqua e dagli gnu
     let patch-center one-of patches with [
@@ -269,14 +348,9 @@ to modify-vars
     ]
   ]
 end
-;--------------------------------CREAZIONE ERBA-------------------------------
 
-to grass-generator
-  ifelse high-grass [
-    set pcolor green
-  ] [
-    set pcolor brown
-  ]
+to import-background
+  import-pcolors "img/River_WD2.png"
 end
 
 ;-------------------------------- Go functions --------------------------------
@@ -296,12 +370,42 @@ end
 ; ---------------------- COMPORTAMENTO DEGLI ANIMALI ---------------------------
 to go-wildebeests
   ask wildebeests [
-    if status = 0 [
-      ; if not, default flocking, quite compact herd in march
-          to-flock 1 2 5 4 ;min-sep, sep, ali, coh
-          fd 0.1
-        ]
+    ;; SE C'È ACQUA ENTRO 20 UNITA', VAI VERSO L'ACQUA
+    if any? patches in-radius 50 with [on-water?] [
+      let nearest-water min-one-of patches in-radius 50 with [on-water?] [distance myself]
+      face nearest-water
+      to-flock 6 10 5 4
+      fd 0.2
     ]
+    ;; ALTRIMENTI COMPORTAMENTO NORMALE
+    if not any? patches in-radius 50 with [on-water?] [
+      if status = 0 [
+        ;; es. target fisso e flocking
+        set target patch 0 120
+        face target
+        to-flock 1 2 5 4
+        fd 0.1
+      ]
+      ;; se hai altri status gestiscili qui sotto...
+      ;; ...
+    ]
+
+;    if status = 0 [
+;      ;; Trova la patch azzurra più vicina
+;      let fiume min-one-of patches with [pcolor = sky] [distance myself]
+;
+;      ;; Se esiste una patch azzurra, orientati e vai
+;      if fiume != nobody [
+;        face fiume
+;      ]
+;
+;      ;; Flocking (comportamento di gruppo)
+;      to-flock 1 2 5 4
+;
+;      ;; Muoviti un po' in avanti
+;      fd 0.3
+;    ]
+  ]
 end
 
 ; Go function for lions
@@ -732,11 +836,33 @@ to-report on-water?
   report (shade-of? pcolor blue) or (shade-of? pcolor sky) or (shade-of? pcolor cyan)
 end
 
+to-report between-rivers?
+  let margin 2                              ;; distanza minima dal fiume
+  report (not on-water?)                    ;; deve essere terra
+     and any? patches with [on-water? and pycor > [pycor] of myself]
+     and any? patches with [on-water? and pycor < [pycor] of myself]
+     and pycor < (upper-river - margin)     ;; sotto al fiume alto
+     and pycor > (lower-river + margin)     ;; sopra al fiume basso
+end
+
 to-report on-depth-water?
   report (shade-of? pcolor blue)
 end
 to-report dead? [agent]
   report not member? agent turtles
+end
+
+to-report random-box
+  let box-width  random (max-pxcor / 2) + 5   ; larghezza random (min 5)
+  let box-height random (max-pycor / 2) + 5   ; altezza random (min 5)
+
+  let min-x random (max-pxcor - box-width)
+  let min-y random (max-pycor - box-height)
+  let max-x min-x + box-width
+  let max-y min-y + box-height
+
+  report patches with [pxcor >= min-x and pxcor <= max-x and
+                       pycor >= min-y and pycor <= max-y]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -753,8 +879,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-1
-1
+0
+0
 1
 -120
 120
@@ -848,7 +974,7 @@ SWITCH
 217
 high-grass
 high-grass
-0
+1
 1
 -1000
 
