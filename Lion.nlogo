@@ -136,104 +136,203 @@ end
 ;; genera un gruppo di gnu fra i due fiumi
 to wildebeest-generator
   set-default-shape wildebeests "cow"
-  let pop wildebeests-number                           ;; quante unità creare
+  let pop wildebeests-number
 
-  ;; patch-centro: terra fra i due fiumi, non attaccata all’acqua
-  let centre one-of patches with [
-        between-rivers? and
-        count patches with [on-water?] in-radius 3 = 0
-      ]
+  ;; 1) definisco l’area di spawn attorno al centro
+  let valid-patches patches with [ distancexy 0 0 <= 50 and not on-water? ]
 
-  ;; se (molto raramente) non ne trova, ripiega su una qualsiasi terra
-  if centre = nobody [ set centre one-of patches with [not on-water?] ]
+  ;; 2) scelgo un solo centro di branco dentro quest’area
+  let cluster-center one-of valid-patches
+  let cx [pxcor] of cluster-center
+  let cy [pycor] of cluster-center
 
-  let cx [pxcor] of centre
-  let cy [pycor] of centre
-
+  ;; 3) creo tutti gli gnu sparsi intorno al centro
   create-wildebeests pop [
     ;; ---------- attributi base ----------
-    set size              2.5
-    set color             black
-    set status            0
-    set waitforleadership 0
-    set leadership?       false
-    set crossing?         false
-    set timealone         0
+    set size               2.5
+    set color              black
+    set status             0
+    set waitforleadership  0
+    set leadership?        false
+    set crossing?          false
+    set timealone          0
     set firsttimeattacked? true
-    set flockmates        no-turtles
+    set flockmates         no-turtles
     ;; ------------------------------------
 
-    ;; --- estrai finché ottieni una patch di terra valida ---
-    ;; --- estrai finché ottieni una patch di terra valida ---
-    let good? false
-    while [not good?] [
-      let x random-normal cx 5          ;; σ = 5 → compattezza del gruppo
+    ;; tentativi finché non trovo una patch di terra entro 50 blocchi
+    let placed? false
+    while [not placed?] [
+      let x random-normal cx 5
       let y random-normal cy 5
-      let p patch x y                   ;; p è la patch corrispondente
-      if p != nobody and not [on-water?] of p [
-        move-to p                       ;; posiziona lo gnu
-        set good? true
-      ]
-    ]
-
-    ]
-end
-
-
-
-to lions-generator
-  ; Default shape
-  set-default-shape lions "lion"
-  if lions? [
-    ; if lions? is true (lions presence true) create them
-    ask n-of lions-number patches with [on-water? = false and count wildebeests in-radius 30 < 1 and pxcor > -50] [
-      sprout-lions 1 [
-        ; Default characteristics and parameters value
-        set size 2
-        set color red
-        set status 0
-        set accelerationtime 0
-        set waitingtime 0
-        ; if too much near to the water move the lion away
-        if (count patches with [on-water?] in-radius 5 > 0) [
-          move-to one-of patches with [count patches with [on-water? = false] in-radius 5 = 0]
+      if distancexy x y <= 50 [
+        let p patch x y
+        if p != nobody and not [on-water?] of p [
+          move-to p
+          set placed? true
         ]
       ]
     ]
   ]
 end
 
+
+
+to lions-generator
+  if lions? [
+    set-default-shape lions "lion"
+    ;; 1) ascissa media del branco di gnu
+    let herd-x mean [xcor] of wildebeests
+    ;; 2) soglia orizzontale per distinguere nord vs sud
+    let mid-water-y mean [pycor] of patches with [on-water?]
+
+    ;; 3) rive “sud del fiume nord” FUORI dal corridoio ±50
+    let north-bank patches with [
+      not on-water?
+      and patch-at 0 1 != nobody
+      and [on-water?] of patch-at 0 1
+      and [pycor] of patch-at 0 1 > mid-water-y
+      and abs(pxcor - herd-x) > 20
+      and abs(pxcor - herd-x) < 30
+    ]
+
+    ;; 4) rive “nord del fiume sud” FUORI dal corridoio ±50
+    let south-bank patches with [
+      not on-water?
+      and patch-at 0 -1 != nobody
+      and [on-water?] of patch-at 0 -1
+      and [pycor] of patch-at 0 -1 < mid-water-y
+      and abs(pxcor - herd-x) > 20
+      and abs(pxcor - herd-x) < 30
+    ]
+
+    if any? north-bank and any? south-bank [
+      let n1 floor (lions-number / 2)
+      let n2 lions-number - n1
+
+      ;; prima metà: sud del fiume nord
+      let nb-center one-of north-bank
+      let nx [pxcor] of nb-center
+      let ny [pycor] of nb-center
+      create-lions n1 [
+        set size 2
+        set color red
+        set status 0
+        set accelerationtime 0
+        set waitingtime 0
+        let placed? false
+        while [not placed?] [
+          let x random-normal nx 2
+          let y random-normal ny 2
+          let p patch x y
+          if p != nobody and not [on-water?] of p [
+            move-to p
+            set placed? true
+          ]
+        ]
+      ]
+
+      ;; seconda metà: nord del fiume sud
+      let sb-center one-of south-bank
+      let sx [pxcor] of sb-center
+      let sy [pycor] of sb-center
+      create-lions n2 [
+        set size 2
+        set color red
+        set status 0
+        set accelerationtime 0
+        set waitingtime 0
+        let placed? false
+        while [not placed?] [
+          let x random-normal sx 2
+          let y random-normal sy 2
+          let p patch x y
+          if p != nobody and not [on-water?] of p [
+            move-to p
+            set placed? true
+          ]
+        ]
+      ]
+    ]
+  ]
+end
+
+
 to lionesses-generator
   if lionesses? [
     set-default-shape lionesses "lion"
+    let herd-x mean [xcor] of wildebeests
+    let mid-water-y mean [pycor] of patches with [on-water?]
 
-    ; Trova una zona adatta lontano dall'acqua e dagli gnu
-    let patch-center one-of patches with [
-      on-water? = false and
-      count wildebeests in-radius 30 < 1 and
-      pxcor > -50
+    let north-bank patches with [
+      not on-water?
+      and patch-at 0 1 != nobody
+      and [on-water?] of patch-at 0 1
+      and [pycor] of patch-at 0 1 > mid-water-y
+      and abs(pxcor - herd-x) > 20
+      and abs(pxcor - herd-x) < 30
+    ]
+    let south-bank patches with [
+      not on-water?
+      and patch-at 0 -1 != nobody
+      and [on-water?] of patch-at 0 -1
+      and [pycor] of patch-at 0 -1 < mid-water-y
+      and abs(pxcor - herd-x) > 20
+      and abs(pxcor - herd-x) < 30
     ]
 
-    ; Se esiste una zona valida
-    if patch-center != nobody [
-      let x [pxcor] of patch-center
-      let y [pycor] of patch-center
+    if any? north-bank and any? south-bank [
+      let n1 floor (lionesses-number / 2)
+      let n2 lionesses-number - n1
 
-      create-lionesses lionesses-number [
+      let nb-center one-of north-bank
+      let nx [pxcor] of nb-center
+      let ny [pycor] of nb-center
+      create-lionesses n1 [
         set size 2
         set color yellow
         set status 0
         set accelerationtime 0
         set waitingtime 0
+        let placed? false
+        while [not placed?] [
+          let x random-normal nx 2
+          let y random-normal ny 2
+          let p patch x y
+          if p != nobody and not [on-water?] of p [
+            move-to p
+            set placed? true
+          ]
+        ]
+      ]
 
-        ; Distribuzione normale attorno alla patch centrale
-        let new-x random-normal x 3
-        let new-y random-normal y 3
-        setxy new-x new-y
+      let sb-center one-of south-bank
+      let sx [pxcor] of sb-center
+      let sy [pycor] of sb-center
+      create-lionesses n2 [
+        set size 2
+        set color yellow
+        set status 0
+        set accelerationtime 0
+        set waitingtime 0
+        let placed? false
+        while [not placed?] [
+          let x random-normal sx 2
+          let y random-normal sy 2
+          let p patch x y
+          if p != nobody and not [on-water?] of p [
+            move-to p
+            set placed? true
+          ]
+        ]
       ]
     ]
   ]
 end
+
+
+
+
 ;--------------------------------SETUP STAGIONI-------------------------------
 to modify-vars
   ifelse constraints? [
@@ -836,40 +935,28 @@ to go-lionesses
       set group-target target-prey
     ]
   ]
-
-  ask lionesses [
-    ; Assunzione: nessun predatore sull'acqua
-    if count patches in-radius 5 with [on-water?] > 0 [
-      ; Se vicino all'acqua, cambia direzione
-      fd -0.2
-      set heading (heading + (random-int-between -10 10))
-      fd 0.1
-    ]
-    if on-water? [
-      move-to one-of (patches with [on-water? = false])
-      set heading (heading + (random-int-between -150 -210 ))
-      fd 0.1
-    ]
-    ; Status 0: rilassato, pattugliamento in formazione
+ask lionesses [
+    ;; prima di qualsiasi movimento, controllo il patch-ahead:
     if status = 0 [
-      to-flock 1 2 5 4  ; (min-sep, sep, align, cohere)
-      fd 0.1
-      ; Controlla un possibile allarme
-      let possiblewildebeest one-of wildebeests in-radius 50
-      if possiblewildebeest != nobody [
-        face possiblewildebeest
-        set status 1
+      ;; cerco uno gnù in status 1 (vicino all'acqua) entro raggio 10
+      let prey-in-water one-of wildebeests in-radius 10 with [status = 1]
+      if prey-in-water != nobody [
+        set status 1         ;; passo ad allerta
+        face prey-in-water
       ]
+      ;; altrimenti resto fermo in appostamento
+      stop
     ]
+
 
     ; Status 1: allertato, affronta la possibile preda e cerca di avvicinarsi lentamente
     if status = 1 [
       let possiblewildebeest one-of wildebeests in-radius 50
       ifelse possiblewildebeest != nobody [
         face possiblewildebeest
-        fd 0.05
+        fd 0.1
         ; Targeting della preda: controlla una probabile preda
-        let probablewildebeest one-of (wildebeests with [count wildebeests in-radius 2 < 3]) in-radius 12
+        let probablewildebeest one-of (wildebeests with [count wildebeests in-radius 2 < 5]) in-radius 30
         if probablewildebeest != nobody [
           face probablewildebeest
           set status 2
@@ -1154,9 +1241,9 @@ NIL
 HORIZONTAL
 
 BUTTON
-698
+700
 10
-761
+763
 43
 Setup
 setup
@@ -1207,7 +1294,7 @@ lions-number
 lions-number
 0
 10
-5.0
+1.0
 1
 1
 NIL
