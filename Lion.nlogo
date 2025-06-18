@@ -139,7 +139,7 @@ to wildebeest-generator
   let pop wildebeests-number
 
   ;; 1) definisco l’area di spawn attorno al centro
-  let valid-patches patches with [ distancexy 0 0 <= 50 and not on-water? ]
+  let valid-patches patches with [ distancexy 0 0 <= 10 and not on-water? ]
 
   ;; 2) scelgo un solo centro di branco dentro quest’area
   let cluster-center one-of valid-patches
@@ -192,8 +192,8 @@ to lions-generator
       and patch-at 0 1 != nobody
       and [on-water?] of patch-at 0 1
       and [pycor] of patch-at 0 1 > mid-water-y
-      and abs(pxcor - herd-x) > 20
-      and abs(pxcor - herd-x) < 30
+      and abs(pxcor - herd-x) > 40
+      and abs(pxcor - herd-x) < 50
     ]
 
     ;; 4) rive “nord del fiume sud” FUORI dal corridoio ±50
@@ -202,8 +202,8 @@ to lions-generator
       and patch-at 0 -1 != nobody
       and [on-water?] of patch-at 0 -1
       and [pycor] of patch-at 0 -1 < mid-water-y
-      and abs(pxcor - herd-x) > 20
-      and abs(pxcor - herd-x) < 30
+      and abs(pxcor - herd-x) > 40
+      and abs(pxcor - herd-x) < 50
     ]
 
     if any? north-bank and any? south-bank [
@@ -269,16 +269,16 @@ to lionesses-generator
       and patch-at 0 1 != nobody
       and [on-water?] of patch-at 0 1
       and [pycor] of patch-at 0 1 > mid-water-y
-      and abs(pxcor - herd-x) > 20
-      and abs(pxcor - herd-x) < 30
+      and abs(pxcor - herd-x) > 40
+      and abs(pxcor - herd-x) < 50
     ]
     let south-bank patches with [
       not on-water?
       and patch-at 0 -1 != nobody
       and [on-water?] of patch-at 0 -1
       and [pycor] of patch-at 0 -1 < mid-water-y
-      and abs(pxcor - herd-x) > 20
-      and abs(pxcor - herd-x) < 30
+      and abs(pxcor - herd-x) > 40
+      and abs(pxcor - herd-x) < 50
     ]
 
     if any? north-bank and any? south-bank [
@@ -570,113 +570,27 @@ to go-wildebeests
       ; Status 2: crossing the river, tryi to swim in one or more rows
       ; OBS: wildebeests wait until they have enough space to jump and start to swim,
      ;       only a little fraction of the herd swim at any time
-;      if status = 2 [
-;        if on-water? [
-;          set crossing? true
-;        ]
-;        ; Set max-density dependent to river width and wildebeests sub-herds numerosity
-;        let max-density 0
-;        let sub-herds ((round ((wildebeests-number / wildebeests-sub-herds) / 100)) * 100)
-;        if river-width = 1 [
-;          if sub-herds < 201 [
-;            set max-density 30
-;          ]
-;          if sub-herds < 401 and sub-herds > 200 [
-;            set max-density 35
-;          ]
-;          if sub-herds < 601 and sub-herds > 400 [
-;            set max-density 40
-;          ]
-;          if sub-herds < 801 and sub-herds > 600 [
-;            set max-density 45
-;          ]
-;          if sub-herds > 800 [
-;            set max-density 50
-;          ]
-;        ]
-;        if river-width = 2 [
-;          if sub-herds < 201 [
-;            set max-density 40
-;          ]
-;          if sub-herds < 401 and sub-herds > 200 [
-;            set max-density 45
-;          ]
-;          if sub-herds < 601 and sub-herds > 400 [
-;            set max-density 50
-;          ]
-;          if sub-herds < 801 and sub-herds > 600 [
-;            set max-density 55
-;          ]
-;          if sub-herds > 800 [
-;            set max-density 60
-;          ]
-;        ]
-;        if river-width = 3 [
-;          if sub-herds < 201 [
-;            set max-density 50
-;          ]
-;          if sub-herds < 401 and sub-herds > 200 [
-;            set max-density 55
-;          ]
-;          if sub-herds < 601 and sub-herds > 400 [
-;            set max-density 60
-;          ]
-;          if sub-herds < 801 and sub-herds > 600 [
-;            set max-density 65
-;          ]
-;          if sub-herds > 800 [
-;            set max-density 70
-;          ]
-;        ]
-;        ifelse (count wildebeests with [status = 2 and on-water?]) < max-density [
-;          ; If there aren't enough wildebeests already in the water jump and join the herd
-;          ; Flocking in row/rows
-;          to-flock 0.25 1 6 1.5 ;min-sep, sep, ali, coh
-;          ; Count neighbors on the left side (water flux from right to left)
-;          ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self < 1 [
-;            ; if alone --> suffer more from water flux and speed --> divert max
-;            left (random-int-between 20 30) * ((river-speed + river-flow + 2) / 4)
-;          ] [
-;            ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self < 2 [
-;              ; if not enough neighbors on the left --> divert to the left more then the others
-;              left (random-int-between 10 20) * ((river-speed + river-flow + 2) / 4)
-;            ] [
-;              ; if in the herd, divert only a bit
-;              left (random-int-between 5 10) * ((river-speed + river-flow + 2) / 4)
-;            ]
-;          ]
-;          ifelse sex = 2 or sex = 1 [
-;            ; Calves and adult females (swim slower then males and more quiet)
-;            fd 0.05
-;          ] [
-;            ; Adult males (faster and braver then calves and women)
-;            fd 0.06
-;          ]
-;        ] [
-;          ; If there are already enough wildebeests in the water
-;          if on-water? [
-;            ; If the wildebeest is already in water continues to swim
-;            to-flock 0.25 1 6 1.5
-;            ; Count neighbors on the left side (water flux from right to left)
-;            ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self < 1 [
-;              left (random-int-between 20 30) * ((river-speed + river-flow + 2) / 4)
-;            ][
-;              ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self < 2 [
-;                left (random-int-between 10 20) * ((river-speed + river-flow + 2) / 4)
-;              ][
-;                left (random-int-between 5 10) * ((river-speed + river-flow + 2) / 4)
-;              ]
-;            ]
-;            ifelse sex = 2 or sex = 1 [
-;              fd 0.05
-;            ] [
-;              fd 0.06
-;            ]
-;          ]
-;          ; If not yet in the water -->
-;          ; do nothing and wait until enough wildebeests complete the crossing to jump in the river
-;        ]
-;      ]
+      if status = 2 [
+        ;; 1) Se hai fatto un passo in acqua, torna immediatamente indietro
+        if on-water? [
+          bk 0.5                       ;; mezzo passo sulla terraferma
+          rt 90                        ;; orientati parallelo al fiume
+        ]
+
+        ;; 2) Mantieni distanza per evitare sovrapposizioni
+        to-flock 2 4 1 0              ;; min‑sep 2, separazione forte, quasi zero coesione
+        if any? other wildebeests-here [
+          rt random 360
+          fd 0.3                      ;; spostati su un’altra patch
+        ]
+
+        ;; 3) Avanza lentamente lungo la riva (niente attraversamento)
+        fd 0.05
+
+        ;; 4) Non attivare mai la logica di "crossing completato"
+        set crossing? false
+      ]
+
       ; Status 3: over the river, flocking spreading a bit facing the end of the grid
       if status = 3 [
         to-flock 3 5 1 1
@@ -758,21 +672,24 @@ end
 to go-lions
   ask lions [
     ; Assumption: no lions on water
-    if count patches in-radius 5 with [on-water?] > 0 [
-      ; If close to water change directory
-      fd -0.2
-      set heading (heading + (random-int-between -10 10))
-      fd 0.1
-    ]
+    ;; Solo quando il leone è su acqua
     if on-water? [
-      move-to one-of (patches with [on-water? = false])
-      set heading (heading + (random-int-between -150 -210 ))
-      fd 0.1
+      ;; Controlla il patch che sta a 1 passo davanti
+      let davanti patch-ahead 1
+      ifelse (davanti != nobody and [on-water?] of davanti) [
+        ;; Se davanti c'è ancora acqua, indietreggia e gira un po'
+        fd -0.1
+        rt random-int-between -20 20
+      ] [
+        ;; Altrimenti (sta dando le spalle all’acqua), avanza verso terra
+        fd 0.1
+      ]
     ]
+
     ; Status 0: relax, random walk before a alert
     if status = 0 [
       rt random-int-between -10 10
-      fd 0.03
+      ;fd 0.03
       ; Check for a possible alert
       let possiblewildebeest one-of wildebeests in-radius 50
       if possiblewildebeest != nobody [
@@ -784,32 +701,36 @@ to go-lions
     ; Status 1: alerted, face the possible prey and slowly try to get near to it/them
     ; OBS: not a real ambush, cause when wildebeests migrate they're too much annd they also ignore more predators
     if status = 1 [
-      let possiblewildebeest one-of wildebeests in-radius 50
-      ; If alert is real
+      ;; cerca uno gnu entro raggio 50
+      let possiblewildebeest one-of wildebeests with [status = 2] in-radius 50
       ifelse possiblewildebeest != nobody [
+        ;; orientati verso lo gnu
         face possiblewildebeest
         fd 0.05
-        ; Prey targeting: check for a probable prey
-        let probablewildebeest one-of (wildebeests with [count wildebeests in-radius 2 < 3]) in-radius 12
+        ;; avanza lentamente solo se lo gnu è su acqua
+
+
+        ;; se trovi uno gnu isolato (meno di 3 nel raggio 2) entro 12 passi, vai a targeting
+        let probablewildebeest one-of wildebeests with [status = 2] in-radius 12
         if probablewildebeest != nobody [
           face probablewildebeest
           set status 2
         ]
+
+        ;; se lo stormo è numeroso (>3 entro raggio 3), gira e scappa
         if count wildebeests in-radius 3 > 3 [
-          ; theorically is IMPOSSIBLE from this state, keep it here to be sure
-          ; escape
           rt 180
           set status 4
         ]
-      ][
-        ; false alert
+      ] [
+        ;; se lo gnu è sparito, torna a relax
         set status 0
       ]
     ]
     ; Status 2: targeting mode, near to on or more target prey, wait until try to attack
     if status = 2 [
       ; try to attack (if exist a real target: wildebeest in radius 5 with only 1 neighbor)
-      let prey one-of (wildebeests with [count wildebeests in-radius 2 < 2]) in-radius 12
+      let prey one-of wildebeests in-radius 50
       ifelse prey != nobody [
         ; Approach the target if is enough alone
         face prey
@@ -927,14 +848,17 @@ to go-lions
 end
 
 to go-lionesses
+
   ; Una sola leonessa (la "leader") sceglie la preda
   let leader-lioness min-one-of lionesses [who]
-  if leader-lioness != nobody [
-    let target-prey one-of (wildebeests with [count wildebeests in-radius 2 < 2])
-    ask lionesses [
-      set group-target target-prey
-    ]
+  let target-prey one-of (wildebeests with [count wildebeests in-radius 2 < 2])
+if target-prey != nobody [
+
+  ask lionesses [
+    set group-target target-prey
   ]
+]
+
 ask lionesses [
     ;; prima di qualsiasi movimento, controllo il patch-ahead:
     if status = 0 [
@@ -1185,6 +1109,8 @@ to-report dead? [agent]
   report not member? agent turtles
 end
 
+
+
 ;to-report random-box
 ;  let box-width  random (max-pxcor / 2) + 5   ; larghezza random (min 5)
 ;  let box-height random (max-pycor / 2) + 5   ; altezza random (min 5)
@@ -1234,7 +1160,7 @@ wildebeests-number
 wildebeests-number
 0
 100
-18.0
+24.0
 1
 1
 NIL
@@ -1294,7 +1220,7 @@ lions-number
 lions-number
 0
 10
-1.0
+10.0
 1
 1
 NIL
@@ -1382,7 +1308,7 @@ river-flow
 river-flow
 1
 4
-3.0
+2.0
 1
 1
 NIL
@@ -1397,7 +1323,7 @@ river-width
 river-width
 1
 3
-3.0
+1.0
 1
 1
 NIL
