@@ -507,7 +507,7 @@ to go-wildebeests
       ; 4) Check if status is 4
       ; OBS: lions attack a wildebeest from radius 12, but wildebeest see it only in radius 10
       ;  why? wildebeests, that are usually vigilant, are less vigilant if they're migrating
-      if (count lions with [status = 3] in-radius 10 > 0 and count wildebeests in-radius 2 < 2) [
+      if (count lions with [status != 5] in-radius 20 > 0) [
         set status 4
       ]
       ; 5) Check if status is 6
@@ -609,43 +609,81 @@ to go-wildebeests
       ; Status 4: predation --> evasion
       if status = 4 [
         set color green
-        ; escape
-        ifelse firsttimeattacked? [
-          ; escape to the right
-          ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self > 1 [
-            face patch 120 120
-            fd 0.12
-          ] [
-            ;escape to the left
-            face patch -120 120
-            fd 0.12
-          ]
-          set firsttimeattacked? false
-        ] [
-          set heading (heading + random-int-between -10 10)
-          fd 0.12
+
+        ;; ---------- 1) scegli la direzione OPPOS TA al leone ----------
+        let water-patch min-one-of patches in-radius 20 with [on-water?] [distance myself]
+
+        if water-patch != nobody [
+          ;; punta l’acqua, poi gira di 180° (direzione terra)
+          face water-patch
+          rt 180
         ]
-        ; if no more hungry lions near to you --> pursuit until reach again the herd
-        if count lions with [status != 5] in-radius 10 < 1 [
-          ; pursuit mode
+
+        ;; se davanti c’è ancora acqua, ruota finché trovi terra
+        while [patch-ahead 1 != nobody and [on-water?] of patch-ahead 1] [
+          rt 30          ;; passi da 30°: più piccoli = controllo più fine
+        ]
+
+        ;; ---------- 3) fuga ----------
+        fd 0.12                 ;; avanza
+
+        ;; ---------- 4) uscita dallo stato 4 ----------
+        if count lions with [status != 5] in-radius 10 = 0 [
           set status 5
           set firsttimeattacked? true
+        ]
+
+        if (count lions with [status != 5] in-radius 20 > 0) [
+          set status 4
         ]
       ]
       ; Status 5: pursuit mode
       if status = 5 [
-        ; come back to the herd
+        ;; 1) colore di “ritorno al branco”
         set color blue
-        let the-herd (one-of wildebeests with [count wildebeests in-radius 2 > 2] in-radius 50)
-        face the-herd
-        ; if about to catch up with the herd, don't pass the leader, only pull even with it
-        ifelse distance the-herd > 1 [
-          fd 0.12
-        ][
-          move-to the-herd
-          set color black
-          ; Back to the status of the herd
-          set status [status] of the-herd
+
+        ;; 2) individua il branco (≥3 gnu ravvicinati) entro 50 passi
+        let the-herd one-of wildebeests
+        with [count wildebeests in-radius 2 > 2]  ;; “nucleo” del branco
+        in-radius 50
+
+        ifelse the-herd != nobody [
+
+          ;; -------------------- AVVICINAMENTO --------------------
+          face the-herd
+
+          ;; finché sei a >4 passi dal branco → avanza
+          if distance the-herd > 4 [
+            fd 0.12
+          ]
+
+          ;; -------------------- INSERIMENTO --------------------
+          ;; quando sei vicino (<4) scegli una patch libera di terra
+          if distance the-herd <= 4 [
+            let safe-spot one-of ( [ patches in-radius 3 ] of the-herd )
+                    with [ not any? turtles-here
+                           and not on-water? ]
+
+
+            if safe-spot != nobody [
+              move-to safe-spot                 ;; niente sovrapposizioni!
+
+              ;; riprendi il colore normale e lo status del branco
+              set color black
+              set status [status] of the-herd
+            ]
+          ]
+
+        ] [
+          ;; se non trovi il branco fai un piccolo random-walk di ricerca
+          rt random 360
+          fd 0.1
+        ]
+
+        ;; 3) vincolo spaziale: mai in acqua né fuori dal corridoio
+        if on-water? or not between-rivers? [
+          rt 180
+          fd 1
         ]
       ]
       ; Handle wildebeests life
