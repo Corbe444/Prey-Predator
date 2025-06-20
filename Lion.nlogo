@@ -7,7 +7,7 @@
 ; - firstleader?: is the wildebeest a hypotetic first leader?
 ; - approachpoint: river approach point for the herd (first leader choose it)
 ; - lionsattacks: number of lion's attacks
-globals [wildebeestseatenbylions wildebeestseatenbycrocs wildebeestsdrowned cont crowding? firstleader? approachpoint lionsattacks upper-river lower-river]
+globals [escape-heading wildebeestseatenbylions wildebeestseatenbycrocs wildebeestsdrowned cont crowding? firstleader? approachpoint lionsattacks upper-river lower-river]
 ;Define new turtle breed: Wildebeest, Lions
 breed [wildebeests wildebeest] ;[plural singolar]
 breed [lions lion]
@@ -470,8 +470,10 @@ end
 to go-wildebeests
 	ask wildebeests [
     ifelse status != 6 [
+
+
       ; if not hidden (job done status)
-      if status != 4 [
+      if status != 4 and status != 5[
         ; if not in evasion face a random target (over the river)
         if any? patches in-radius 50 with [on-water?] [
         let nearest-water min-one-of patches in-radius 50 with [on-water?] [distance myself]
@@ -507,7 +509,7 @@ to go-wildebeests
       ; 4) Check if status is 4
       ; OBS: lions attack a wildebeest from radius 12, but wildebeest see it only in radius 10
       ;  why? wildebeests, that are usually vigilant, are less vigilant if they're migrating
-      if (count lions with [status = 3] in-radius 10 > 0 and count wildebeests in-radius 2 < 2) [
+      if (count lions in-radius 10 > 0) [
         set status 4
       ]
       ; 5) Check if status is 6
@@ -606,7 +608,7 @@ to go-wildebeests
           set firstleader? true
         ]
       ]
-      ; Status 4: predation --> evasion
+   ; Status 4: predation --> evasion
       if status = 4 [
         set color green
         ; escape
@@ -636,7 +638,7 @@ to go-wildebeests
       if status = 5 [
         ; come back to the herd
         set color blue
-        let the-herd (one-of wildebeests with [count wildebeests in-radius 2 > 2] in-radius 50)
+        let the-herd (one-of wildebeests in-radius 50)
         face the-herd
         ; if about to catch up with the herd, don't pass the leader, only pull even with it
         ifelse distance the-herd > 1 [
@@ -648,16 +650,8 @@ to go-wildebeests
           set status [status] of the-herd
         ]
       ]
-      ; Handle wildebeests life
-      ; ASSUMPTION: wildebeests drown cause they spend to much time alone in depth water
-      if count other wildebeests in-radius 3.5 < 1 and on-depth-water? and timealone < 15 [
-        set timealone (timealone + 1)
-      ]
-      if timealone >= 15 [
-        set wildebeestsdrowned wildebeestsdrowned + 1
-        ; When no energy --> die
-        die
-      ]
+
+
     ] [
       ; Stop status: job done!
       set hidden? true
@@ -1160,7 +1154,7 @@ wildebeests-number
 wildebeests-number
 0
 100
-24.0
+17.0
 1
 1
 NIL
@@ -1220,7 +1214,7 @@ lions-number
 lions-number
 0
 10
-10.0
+2.0
 1
 1
 NIL
@@ -1244,7 +1238,7 @@ SWITCH
 147
 lionesses?
 lionesses?
-0
+1
 1
 -1000
 
