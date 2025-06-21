@@ -470,19 +470,20 @@ end
 to go-wildebeests
 	ask wildebeests [
     ifelse status != 6 [
-
-
       ; if not hidden (job done status)
-      if status != 4 and status != 5[
+      if status != 2[
         ; if not in evasion face a random target (over the river)
-        if any? patches in-radius 50 with [on-water?] [
-        let nearest-water min-one-of patches in-radius 50 with [on-water?] [distance myself]
-        face nearest-water
-        ]
+        ;commento in quanto lentissimo come codice
+;        if any? patches in-radius 50 with [on-water?] [
+;        let nearest-water min-one-of patches in-radius 50 with [on-water?] [distance myself]
+;        face nearest-water
+;        ]
+        set target patch (random-int-between -80 120) 120
+        face target
       ]
       ; Eevasive wildebeest that change to status 3 cause finish to cross the river and forget to be in status 4
       if color = green [
-        set status 4
+        set status 2
       ]
       ; Wildebeest in pursuit that change to status 3 cause finish to cross the river and forget to be in status 5
       if color = blue [
@@ -497,10 +498,6 @@ to go-wildebeests
       if closetowater? [
         set status 1
       ]
-      ; 2) Check if Status is 2
-      if on-water? [
-        set status 2
-      ]
       ; 3) Check if Status is 3
       if (on-water? = false) and crossing? [
         set status 3
@@ -510,7 +507,7 @@ to go-wildebeests
       ; OBS: lions attack a wildebeest from radius 12, but wildebeest see it only in radius 10
       ;  why? wildebeests, that are usually vigilant, are less vigilant if they're migrating
       if (count lions in-radius 10 > 0) [
-        set status 4
+        set status 2
       ]
       ; 5) Check if status is 6
       if ycor > 118 [
@@ -518,98 +515,31 @@ to go-wildebeests
       ]
       ;Status 0: normal flocking before the river banks
       if status = 0 [
-        ifelse crowding? [
-          ; if crowding? flocking crowding and spreading on the river banks
-          ; OBS: this is the case when some wildebeests are already on the river banks and the others no
-          to-flock 10 10 0 0 ;min-sep, sep, ali, coh
-          ifelse [distance myself] of approachpoint < 10 [
-            fd 0.04		
-          ][
-            ifelse [distance myself] of approachpoint < 20 [
-              fd 0.08
-            ][
-              ifelse [distance myself] of approachpoint < 30 [
-                fd 0.16
-              ][
-                ifelse [distance myself] of approachpoint < 40 [
-                  fd 0.20
-                ][
-                  to-flock 1 2 5 4 ; flock as status 0
-                  fd 0.1
-                ]
-              ]
-            ]
-          ]
-        ] [
           ; if not, default flocking, quite compact herd in march
           to-flock 1 2 5 4 ;min-sep, sep, ali, coh
-          fd 0.1
-        ]
+          fd 0.01
       ]
-      ; Status 1: near the river bank, wait for the leaders to start the crossing
+      ; Status 1: near the river bank
       if status = 1 [
-        if firstleader? [
-          ; if the wildebeest is a hypothetic first leader
-          set crowding? true ; false - default flocking, true - crowding (for the wildebeests with status 0)
-          set approachpoint patch-here
-          set firstleader? false
-          stop
-        ]
-        ifelse count wildebeests with [ leadership? ] <= number-of-leaders [
-          set waitforleadership (waitforleadership + 1)
-          if waitforleadership >= 10 [
-            ; Wait enough --> choose to be leader (if the wildeebest is male)
-            set leadership? true
-            set color red
-            ; Set next status --> time to cross the river
-            set status 2
-          ]
-        ][
-   		  	;else, so if there are already enough leaders, if on-water? set status to 2
-          set status 2
-     	  ]
-      ]
-      ; Status 2: crossing the river, tryi to swim in one or more rows
-      ; OBS: wildebeests wait until they have enough space to jump and start to swim,
-     ;       only a little fraction of the herd swim at any time
-      if status = 2 [
         ;; 1) Se hai fatto un passo in acqua, torna immediatamente indietro
         if on-water? [
           bk 0.5                       ;; mezzo passo sulla terraferma
-          rt 90                        ;; orientati parallelo al fiume
+          ;rt 90                        ;; orientati parallelo al fiume
         ]
 
         ;; 2) Mantieni distanza per evitare sovrapposizioni
         to-flock 2 4 1 0              ;; min‑sep 2, separazione forte, quasi zero coesione
-        if any? other wildebeests-here [
+        if any? other wildebeests in-radius 2 [
           rt random 360
-          fd 0.3                      ;; spostati su un’altra patch
+          fd 0.03                      ;; spostati su un’altra patch
         ]
 
         ;; 3) Avanza lentamente lungo la riva (niente attraversamento)
-        fd 0.05
+        fd 0.01
 
-        ;; 4) Non attivare mai la logica di "crossing completato"
-        set crossing? false
       ]
-
-      ; Status 3: over the river, flocking spreading a bit facing the end of the grid
-      if status = 3 [
-        to-flock 3 5 1 1
-        fd 0.1
-        ; if status 3 and no more wildebeests in water --> a full sub-herd/the full herd has crossed the river
-        if count wildebeests with [on-water?] = 0 and count wildebeests with [status = 1] = 0[
-          ask wildebeests [
-            ; no more leaders
-            set leadership? false
-          ]
-          ; set parameters as default for the next sub-herd
-          set crowding? false
-          set firstleader? true
-        ]
-      ]
-   ; Status 4: predation --> evasion
-      if status = 4 [
+   ; Status 2: predation --> evasion
+      if status = 2 [
         set color green
         ; escape
         ifelse firsttimeattacked? [
@@ -696,7 +626,7 @@ to go-lions
     ; OBS: not a real ambush, cause when wildebeests migrate they're too much annd they also ignore more predators
     if status = 1 [
       ;; cerca uno gnu entro raggio 50
-      let possiblewildebeest one-of wildebeests with [status = 2] in-radius 50
+      let possiblewildebeest one-of wildebeests with [status = 1] in-radius 50
       ifelse possiblewildebeest != nobody [
         ;; orientati verso lo gnu
         face possiblewildebeest
@@ -705,7 +635,7 @@ to go-lions
 
 
         ;; se trovi uno gnu isolato (meno di 3 nel raggio 2) entro 12 passi, vai a targeting
-        let probablewildebeest one-of wildebeests with [status = 2] in-radius 12
+        let probablewildebeest one-of wildebeests with [status = 1] in-radius 12
         if probablewildebeest != nobody [
           face probablewildebeest
           set status 2
@@ -1154,7 +1084,7 @@ wildebeests-number
 wildebeests-number
 0
 100
-17.0
+48.0
 1
 1
 NIL
