@@ -29,7 +29,7 @@ breed [lionesses lioness ]
 ; - timealone: time alone in water
 ; - firstimeatacked?: is the first time (of each attack) that the wildebeest notice the predator?
 ; Assumption: a wildebeest die if spend to much time alone (herd effect)
-wildebeests-own [sex target waitforleadership leadership? flockmates nearest-neighbor status crossing? timealone firsttimeattacked?]
+wildebeests-own [target waitforleadership leadership? flockmates nearest-neighbor status firsttimeattacked? tutti?]
 lions-own [status waitingtime accelerationtime]
 lionesses-own [status waitingtime accelerationtime flockmates nearest-neighbor group-target]
 
@@ -42,8 +42,6 @@ to setup
   clear-all
   ask patches [ set pcolor brown + 2 ]
 
-  ; Global variables handler
-  modify-vars
   ;background
   import-background
   set upper-river max [pycor] of patches with [on-water?]
@@ -89,9 +87,8 @@ to wildebeest-generator
     set status             0
     set waitforleadership  0
     set leadership?        false
-    set crossing?          false
-    set timealone          0
     set firsttimeattacked? true
+    set tutti?             true
     set flockmates         no-turtles
     ;; ------------------------------------
 
@@ -131,21 +128,7 @@ to lions-generator
       and abs(pxcor - herd-x) < 50
     ]
 
-;    ;; 4) rive “nord del fiume sud” FUORI dal corridoio ±50
-;    let south-bank patches with [
-;      not on-water?
-;      and patch-at 0 -1 != nobody
-;      and [on-water?] of patch-at 0 -1
-;      and [pycor] of patch-at 0 -1 < mid-water-y
-;      and abs(pxcor - herd-x) > 40
-;      and abs(pxcor - herd-x) < 50
-;    ]
-
-;    if any? north-bank and any? south-bank [
-;      let n1 floor (lions-number / 2)
-;      let n2 lions-number - n1
-
-      ;; prima metà: sud del fiume nord
+      ; sud del fiume nord
       let nb-center one-of north-bank
       let nx [pxcor] of nb-center
       let ny [pycor] of nb-center
@@ -166,28 +149,6 @@ to lions-generator
           ]
         ]
       ]
-
-;      ;; seconda metà: nord del fiume sud
-;      let sb-center one-of south-bank
-;      let sx [pxcor] of sb-center
-;      let sy [pycor] of sb-center
-;      create-lions n2 [
-;        set size 2
-;        set color red
-;        set status 0
-;        set accelerationtime 0
-;        set waitingtime 0
-;        let placed? false
-;        while [not placed?] [
-;          let x random-normal sx 2
-;          let y random-normal sy 2
-;          let p patch x y
-;          if p != nobody and not [on-water?] of p [
-;            move-to p
-;            set placed? true
-;          ]
-;        ]
-;      ]
     ]
 
 end
@@ -207,24 +168,14 @@ to lionesses-generator
       and abs(pxcor - herd-x) > 40
       and abs(pxcor - herd-x) < 50
     ]
-    let south-bank patches with [
-      not on-water?
-      and patch-at 0 -1 != nobody
-      and [on-water?] of patch-at 0 -1
-      and [pycor] of patch-at 0 -1 < mid-water-y
-      and abs(pxcor - herd-x) > 40
-      and abs(pxcor - herd-x) < 50
-    ]
 
-    if any? north-bank and any? south-bank [
-      let n1 floor (lionesses-number / 2)
-      let n2 lionesses-number - n1
 
+    if any? north-bank [
       let nb-center one-of north-bank
       let nx [pxcor] of nb-center
       let ny [pycor] of nb-center
-      create-lionesses n1 [
-        set size 2
+      create-lionesses lionesses-number [
+        set size 3.5
         set color yellow
         set status 0
         set accelerationtime 0
@@ -240,148 +191,14 @@ to lionesses-generator
           ]
         ]
       ]
-
-      let sb-center one-of south-bank
-      let sx [pxcor] of sb-center
-      let sy [pycor] of sb-center
-      create-lionesses n2 [
-        set size 2
-        set color yellow
-        set status 0
-        set accelerationtime 0
-        set waitingtime 0
-        let placed? false
-        while [not placed?] [
-          let x random-normal sx 2
-          let y random-normal sy 2
-          let p patch x y
-          if p != nobody and not [on-water?] of p [
-            move-to p
-            set placed? true
-          ]
-        ]
-      ]
     ]
   ]
 end
+;-------------------------------- SETUP --------------------------------
 
 
 
 
-;--------------------------------SETUP STAGIONI-------------------------------
-to modify-vars
-  ifelse constraints? [
-    ; If constraints are on
-    ; month --> rain
-     if month = "January" [
-      set rain-level 3 ;work only when someone click "setup"
-      output-print "Rain level changed to 3"
-    ]
-     if month = "February" [
-      set rain-level 3 ;work only when someone click "setup"
-      output-print "Rain level changed to 3"
-    ]
-     if month = "March" [
-      set rain-level 3 ;work only when someone click "setup"
-      output-print "Rain level changed to 3"
-    ]
-     if month = "April" [
-      set rain-level 2 ;work only when someone click "setup"
-      output-print "Rain level changed to 2"
-    ]
-     if month = "May" [
-      set rain-level 2 ;work only when someone click "setup"
-      output-print "Rain level changed to 2"
-    ]
-    if month = "June" [
-      set rain-level 1 ;work only when someone click "setup"
-      output-print "Rain level changed to 1"
-    ]
-    if month = "July" [
-      set rain-level 1 ;work only when someone click "setup"
-      output-print "Rain level changed to 1"
-    ]
-    if month = "August" [
-      set rain-level 1 ;work only when someone click "setup"
-      output-print "Rain level changed to 1"
-    ]
-    if month = "September" [
-      set rain-level 2 ;work only when someone click "setup"
-      output-print "Rain level changed to 2"
-    ]
-    if month = "October" [
-      set rain-level 2 ;work only when someone click "setup"
-      output-print "Rain level changed to 2"
-    ]
-    if month = "November" [
-      set rain-level 3 ;work only when someone click "setup"
-      output-print "Rain level changed to 3"
-    ]
-    if month = "December" [
-      set rain-level 3 ;work only when someone click "setup"
-      output-print "Rain level changed to 3"
-    ]
-    ; rain --> river-flow
-    if rain-level = 1 [
-      set river-flow 1
-      output-print "River flow level changed to 1"
-    ]
-    if rain-level = 2 and river-flow = 4 [ ;error
-      set river-flow 2 ;or 1 or 3
-      output-print "River flow level can't be 4 with rain level 2. River flow changed to 2, can be also 1 or 3)"
-    ]
-    if rain-level = 3  and river-flow = 1 [
-      set river-flow 2;
-      output-print "River flow level can't be 1 with rain level 3. River flow changed to 2, can be also 3 or 4"
-    ]
-    ; flow --> [depth, width, speed]
-    if river-flow = 1 [
-      set river-depth 1
-      set river-width 1
-      set river-speed 1
-      output-print "River depth, width and speed levels changed"
-    ]
-    if river-flow = 2 and river-depth = 3 [ ;and (river-width = 3) and (river-speed = 3) [
-      set river-depth 2 ;or 1
-      output-print "River depth level cann't be 3 with river flow level 2. River depth changed to 2, can be also 1"
-    ]
-    if river-flow = 2 and river-width = 3 [
-      set river-width 2 ;or 1
-      output-print "River width level cannot be 3 with river flow level 2. River width changed to 2, can be also 1"
-    ]
-    if river-flow = 2 and river-speed = 3 [
-      set river-speed 2 ;or 1
-      output-print "River speed level cannot be 3 with river flow level 2. River speed changed to 2, can be also 1"
-    ]
-    if river-flow = 3 [
-      set river-depth 2
-      set river-width 3
-      set river-speed 2
-      output-print "River depth, width and speed levels changed"
-    ]
-    if river-flow = 4 [
-      set river-depth 3
-      set river-width 3
-      set river-speed 3
-      output-print "River depth, width and speed levels changed"
-    ]
-  ] [
-    ; else, if contstraints are off, check only width and depth
-    output-print "Constraints off: only width and depth checked"
-    if river-width = 1 and river-depth != 1 and river-depth != 2 [
-      set river-depth 2
-      output-print "River depth changed in according with river-width"
-    ]
-    if river-width = 2 and river-depth != 1 and river-depth != 2 [
-      set river-depth 2
-      output-print "River depth changed in according with river-width"
-    ]
-    if river-width = 3 and river-depth != 2 and river-depth != 3 [
-      set river-depth 3
-      output-print "River depth changed in according with river-width"
-    ]
-  ]
-end
 
 to import-background
   import-pcolors "img/River_WD2.png"
@@ -404,7 +221,7 @@ end
 ; ---------------------- COMPORTAMENTO DEGLI ANIMALI ---------------------------
 to go-wildebeests
 	ask wildebeests [
-    ifelse status != 6 [
+    ifelse status != 4 [
       ; if not hidden (job done status)
       if status != 2[
         ; if not in evasion face a random target (over the river)
@@ -431,7 +248,7 @@ to go-wildebeests
       let number-of-leaders random-int-between 1 5
       ; 0) Default Status: 0 - before arriving at the river banks
       ; 1) Check if Status is 1
-      let closetowater? (count patches in-radius 3 with [on-water?] > 0)
+      let closetowater? (count patches in-radius 3 with [on-water?] > 0 and status = 0)
       if closetowater? [
         set status 1
       ]
@@ -447,8 +264,9 @@ to go-wildebeests
         set status 2
       ]
       ; 5) Check if status is 6
-      if ycor < -70 and closetowater?[
-        set status 6
+      let closetowaterfuga? (count patches in-radius 3 with [on-water?] > 0)
+      if ycor < -70 and closetowaterfuga?[
+        set status 4
       ]
       ;Status 0: normal flocking before the river banks
       if status = 0 [
@@ -479,6 +297,12 @@ to go-wildebeests
       ]
    ; Status 2: predation --> evasion
       if status = 2 [
+        ask wildebeests with [status != 2] [
+          if tutti?[
+            set status 2
+            set color green
+          ]
+        ]
         set color green
         ; escape
         ifelse firsttimeattacked? [
@@ -501,9 +325,10 @@ to go-wildebeests
           ; pursuit mode
           set status 3
           set firsttimeattacked? true
+          set tutti? false
         ]
       ]
-      ; Status 5: pursuit mode
+      ; Status 3: pursuit mode
       if status = 3 [
         ; come back to the herd
         set color blue
@@ -515,8 +340,8 @@ to go-wildebeests
 ;        ][
 ;          move-to the-herd
         to-flock 1 2 5 4 ;min-sep, sep, ali, coh
-          fd 0.02
-          face patch (random-int-between -80 120) -120
+        fd 0.02
+        face patch (random-int-between -80 120) -120
 
           ;set color black
           ; Back to the status of the herd
@@ -729,11 +554,10 @@ to go-lions
 end
 
 to go-lionesses
-
   ; Una sola leonessa (la "leader") sceglie la preda
   let leader-lioness min-one-of lionesses [who]
-  let target-prey one-of (wildebeests with [count wildebeests in-radius 2 < 2])
-if target-prey != nobody [
+  let target-prey one-of wildebeests
+  if target-prey != nobody [
 
   ask lionesses [
     set group-target target-prey
@@ -744,13 +568,11 @@ ask lionesses [
     ;; prima di qualsiasi movimento, controllo il patch-ahead:
     if status = 0 [
       ;; cerco uno gnù in status 1 (vicino all'acqua) entro raggio 10
-      let prey-in-water one-of wildebeests in-radius 10 with [status = 1]
-      if prey-in-water != nobody [
+      let prey-lionesses one-of wildebeests in-radius 50 with [status = 1]
+      if prey-lionesses != nobody [
         set status 1         ;; passo ad allerta
-        face prey-in-water
+        face prey-lionesses
       ]
-      ;; altrimenti resto fermo in appostamento
-      stop
     ]
 
 
@@ -759,28 +581,29 @@ ask lionesses [
       let possiblewildebeest one-of wildebeests in-radius 50
       ifelse possiblewildebeest != nobody [
         face possiblewildebeest
-        fd 0.1
+        fd 0.01
         ; Targeting della preda: controlla una probabile preda
-        let probablewildebeest one-of (wildebeests with [count wildebeests in-radius 2 < 5]) in-radius 30
+        let probablewildebeest one-of wildebeests  in-radius 12
         if probablewildebeest != nobody [
           face probablewildebeest
           set status 2
         ]
-        if count wildebeests in-radius 3 > 3 [
-          ; teoricamente IMPOSSIBILE da questo stato, lo teniamo qui per sicurezza
-          ; fuga
-          rt 180
-          set status 4
-        ]
+;        if count wildebeests in-radius 3 > 3 [
+;          ; teoricamente IMPOSSIBILE da questo stato, lo teniamo qui per sicurezza
+;          ; fuga
+;          rt 180
+;          set status 4
+;        ]
       ][
         ; falso allarme
         set status 0
       ]
     ]
     if status = 2 [
+      set color blue
       ifelse group-target != nobody and distance group-target < 12 [
         face group-target
-        fd 0.15
+        fd 0.05
         set status 3
       ] [
         set waitingtime waitingtime + 1
@@ -791,10 +614,10 @@ ask lionesses [
       ]
 
 
-      if count wildebeests in-radius 3 > 3 [
-        rt 180
-        set status 4
-      ]
+;      if count wildebeests in-radius 3 > 3 [
+;        rt 180
+;        set status 4
+;      ]
 
 
     ]
@@ -802,7 +625,7 @@ ask lionesses [
     if status = 3 [
       ; tenta di uccidere
       set lionsattacks (lionsattacks + 1)
-      fd 0.2
+      fd 0.05
       ifelse group-target != nobody [
         ifelse not dead? group-target [
           face group-target
@@ -812,7 +635,7 @@ ask lionesses [
               die
             ]
             set wildebeestseatenbylions wildebeestseatenbylions + 1
-            set color red  ; (opzionale, per vedere chi ha colpito)
+            set color re  ; (opzionale, per vedere chi ha colpito)
             set group-target nobody
             set status 6
           ]
@@ -839,34 +662,7 @@ ask lionesses [
         set status 4
       ]
     ]
-    ; Status 4: modalità fuga, avvertito da troppi gnu, scegli di scappare un po'
-    if status = 4 [
-      ifelse count wildebeests in-radius 15 < 1 [
-        set status 1
-      ] [
-        ifelse count wildebeests in-radius 5 > 1 [
-          ; fase di accelerazione
-          fd 0.15
-        ] [
-          ; semplicemente scappa
-          fd 0.08
-          ; un solo gnu, prova a catturarlo di nuovo
-          set status 1
-        ]
-      ]
-    ]
-    ; Status 5: fuga da un grande branco, ma non tenta di cacciare di nuovo
-    if status = 5 [
-      ifelse count wildebeests in-radius 15 < 1 [
-        set status 6
-      ] [
-        ifelse count wildebeests in-radius 5 > 1 [
-          fd 0.15
-        ][
-          fd 0.05
-        ]
-      ]
-    ]
+
     ; Status 6: sazio, allontanati
     if status = 6 [
       set color orange
@@ -879,23 +675,7 @@ ask lionesses [
       ]
     ]
     ; Status 7: attacco fallito, allontanati e riprova più tardi
-    if status = 7 [
-      fd 0.05
-      rt random-int-between -10 10
-      if count wildebeests in-radius 3 > 3 [
-        ; fuga
-        rt 180
-        set status 4
-      ]
-      if count wildebeests in-radius 10 = 0 [
-        ; stato normale
-        set status 0
-      ]
-    ]
-    ; Gestione della vita dei predatori
-    if count wildebeests-on neighbors > 4 [
-      die
-    ]
+
   ]
 end
 
@@ -1041,7 +821,7 @@ wildebeests-number
 wildebeests-number
 0
 100
-36.0
+46.0
 1
 1
 NIL
@@ -1088,7 +868,7 @@ SWITCH
 77
 lions?
 lions?
-0
+1
 1
 -1000
 
@@ -1125,7 +905,7 @@ SWITCH
 147
 lionesses?
 lionesses?
-1
+0
 1
 -1000
 
@@ -1138,73 +918,7 @@ lionesses-number
 lionesses-number
 2
 6
-6.0
-1
-1
-NIL
-HORIZONTAL
-
-CHOOSER
-0
-217
-125
-262
-month
-month
-"January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"
-0
-
-SWITCH
-0
-264
-124
-297
-constraints?
-constraints?
-0
-1
--1000
-
-SLIDER
-0
-299
-125
-332
-rain-level
-rain-level
-1
-3
 3.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-0
-333
-172
-366
-river-flow
-river-flow
-1
-4
-2.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-0
-367
-172
-400
-river-width
-river-width
-1
-3
-1.0
 1
 1
 NIL
@@ -1239,6 +953,17 @@ river-speed
 1
 NIL
 HORIZONTAL
+
+SWITCH
+0
+224
+103
+257
+day
+day
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
