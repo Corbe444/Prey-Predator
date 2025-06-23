@@ -131,7 +131,21 @@ to lions-generator
       and abs(pxcor - herd-x) < 50
     ]
 
-      ; sud del fiume nord
+;    ;; 4) rive “nord del fiume sud” FUORI dal corridoio ±50
+;    let south-bank patches with [
+;      not on-water?
+;      and patch-at 0 -1 != nobody
+;      and [on-water?] of patch-at 0 -1
+;      and [pycor] of patch-at 0 -1 < mid-water-y
+;      and abs(pxcor - herd-x) > 40
+;      and abs(pxcor - herd-x) < 50
+;    ]
+
+;    if any? north-bank and any? south-bank [
+;      let n1 floor (lions-number / 2)
+;      let n2 lions-number - n1
+
+      ;; prima metà: sud del fiume nord
       let nb-center one-of north-bank
       let nx [pxcor] of nb-center
       let ny [pycor] of nb-center
@@ -152,6 +166,28 @@ to lions-generator
           ]
         ]
       ]
+
+;      ;; seconda metà: nord del fiume sud
+;      let sb-center one-of south-bank
+;      let sx [pxcor] of sb-center
+;      let sy [pycor] of sb-center
+;      create-lions n2 [
+;        set size 2
+;        set color red
+;        set status 0
+;        set accelerationtime 0
+;        set waitingtime 0
+;        let placed? false
+;        while [not placed?] [
+;          let x random-normal sx 2
+;          let y random-normal sy 2
+;          let p patch x y
+;          if p != nobody and not [on-water?] of p [
+;            move-to p
+;            set placed? true
+;          ]
+;        ]
+;      ]
     ]
 
 end
@@ -368,7 +404,7 @@ end
 ; ---------------------- COMPORTAMENTO DEGLI ANIMALI ---------------------------
 to go-wildebeests
 	ask wildebeests [
-    ifelse status != 4 [
+    ifelse status != 6 [
       ; if not hidden (job done status)
       if status != 2[
         ; if not in evasion face a random target (over the river)
@@ -412,7 +448,7 @@ to go-wildebeests
       ]
       ; 5) Check if status is 6
       if ycor < -70 and closetowater?[
-        set status 4
+        set status 6
       ]
       ;Status 0: normal flocking before the river banks
       if status = 0 [
