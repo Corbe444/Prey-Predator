@@ -149,7 +149,7 @@ to wildebeest-generator
   ;; 3) creo tutti gli gnu sparsi intorno al centro
   create-wildebeests pop [
     ;; ---------- attributi base ----------
-    set size               2.5
+    set size               3.5
     set color              black
     set status             0
     set waitforleadership  0
@@ -196,26 +196,26 @@ to lions-generator
       and abs(pxcor - herd-x) < 50
     ]
 
-    ;; 4) rive “nord del fiume sud” FUORI dal corridoio ±50
-    let south-bank patches with [
-      not on-water?
-      and patch-at 0 -1 != nobody
-      and [on-water?] of patch-at 0 -1
-      and [pycor] of patch-at 0 -1 < mid-water-y
-      and abs(pxcor - herd-x) > 40
-      and abs(pxcor - herd-x) < 50
-    ]
+;    ;; 4) rive “nord del fiume sud” FUORI dal corridoio ±50
+;    let south-bank patches with [
+;      not on-water?
+;      and patch-at 0 -1 != nobody
+;      and [on-water?] of patch-at 0 -1
+;      and [pycor] of patch-at 0 -1 < mid-water-y
+;      and abs(pxcor - herd-x) > 40
+;      and abs(pxcor - herd-x) < 50
+;    ]
 
-    if any? north-bank and any? south-bank [
-      let n1 floor (lions-number / 2)
-      let n2 lions-number - n1
+;    if any? north-bank and any? south-bank [
+;      let n1 floor (lions-number / 2)
+;      let n2 lions-number - n1
 
       ;; prima metà: sud del fiume nord
       let nb-center one-of north-bank
       let nx [pxcor] of nb-center
       let ny [pycor] of nb-center
-      create-lions n1 [
-        set size 2
+      create-lions lions-number [
+        set size 3.5
         set color red
         set status 0
         set accelerationtime 0
@@ -232,29 +232,29 @@ to lions-generator
         ]
       ]
 
-      ;; seconda metà: nord del fiume sud
-      let sb-center one-of south-bank
-      let sx [pxcor] of sb-center
-      let sy [pycor] of sb-center
-      create-lions n2 [
-        set size 2
-        set color red
-        set status 0
-        set accelerationtime 0
-        set waitingtime 0
-        let placed? false
-        while [not placed?] [
-          let x random-normal sx 2
-          let y random-normal sy 2
-          let p patch x y
-          if p != nobody and not [on-water?] of p [
-            move-to p
-            set placed? true
-          ]
-        ]
-      ]
+;      ;; seconda metà: nord del fiume sud
+;      let sb-center one-of south-bank
+;      let sx [pxcor] of sb-center
+;      let sy [pycor] of sb-center
+;      create-lions n2 [
+;        set size 2
+;        set color red
+;        set status 0
+;        set accelerationtime 0
+;        set waitingtime 0
+;        let placed? false
+;        while [not placed?] [
+;          let x random-normal sx 2
+;          let y random-normal sy 2
+;          let p patch x y
+;          if p != nobody and not [on-water?] of p [
+;            move-to p
+;            set placed? true
+;          ]
+;        ]
+;      ]
     ]
-  ]
+
 end
 
 
@@ -478,31 +478,33 @@ to go-wildebeests
 ;        let nearest-water min-one-of patches in-radius 50 with [on-water?] [distance myself]
 ;        face nearest-water
 ;        ]
-        set target patch (random-int-between -80 120) 120
-        face target
+
+        ;punta nord
+;        set target patch (random-int-between -80 120) 120
+;        face target
       ]
-      ; Eevasive wildebeest that change to status 3 cause finish to cross the river and forget to be in status 4
+      ; Eevasive wildebeest that change to status 2 cause finish to cross the river and forget to be in status 4
       if color = green [
         set status 2
       ]
       ; Wildebeest in pursuit that change to status 3 cause finish to cross the river and forget to be in status 5
       if color = blue [
-        set status 5
+        set status 3
       ]
       ; Set number of leaders (can be more then 1, but not too much, cause when wildebeests are in the water
       ; the ones on the banks simply follow the herd and not the leaders anymore)
       let number-of-leaders random-int-between 1 5
       ; 0) Default Status: 0 - before arriving at the river banks
       ; 1) Check if Status is 1
-      let closetowater? (count patches in-radius 3 with [on-water?] > 0 and status = 0)
+      let closetowater? (count patches in-radius 3 with [on-water?] > 0)
       if closetowater? [
         set status 1
       ]
       ; 3) Check if Status is 3
-      if (on-water? = false) and crossing? [
-        set status 3
-        set crossing? false
-      ]
+;      if (on-water? = false) and crossing? [
+;        set status 3
+;        set crossing? false
+;      ]
       ; 4) Check if status is 4
       ; OBS: lions attack a wildebeest from radius 12, but wildebeest see it only in radius 10
       ;  why? wildebeests, that are usually vigilant, are less vigilant if they're migrating
@@ -510,11 +512,13 @@ to go-wildebeests
         set status 2
       ]
       ; 5) Check if status is 6
-      if ycor > 118 [
+      if ycor < -70 and closetowater?[
         set status 6
       ]
       ;Status 0: normal flocking before the river banks
       if status = 0 [
+        set target patch (random-int-between -80 120) 120
+        face target
           ; if not, default flocking, quite compact herd in march
           to-flock 1 2 5 4 ;min-sep, sep, ali, coh
           fd 0.01
@@ -545,46 +549,64 @@ to go-wildebeests
         ifelse firsttimeattacked? [
           ; escape to the right
           ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self > 1 [
-            face patch 120 120
-            fd 0.12
+            face patch -120 -100
+            fd 0.01
           ] [
             ;escape to the left
-            face patch -120 120
-            fd 0.12
+            face patch -120 -100
+            fd 0.01
           ]
           set firsttimeattacked? false
         ] [
           set heading (heading + random-int-between -10 10)
-          fd 0.12
+          fd 0.04
         ]
         ; if no more hungry lions near to you --> pursuit until reach again the herd
         if count lions with [status != 5] in-radius 10 < 1 [
           ; pursuit mode
-          set status 5
+          set status 3
           set firsttimeattacked? true
         ]
       ]
       ; Status 5: pursuit mode
-      if status = 5 [
+      if status = 3 [
         ; come back to the herd
         set color blue
-        let the-herd (one-of wildebeests in-radius 50)
-        face the-herd
+        ;let the-herd (one-of wildebeests in-radius 50)
+        ;face the-herd
         ; if about to catch up with the herd, don't pass the leader, only pull even with it
-        ifelse distance the-herd > 1 [
-          fd 0.12
-        ][
-          move-to the-herd
-          set color black
+;        ifelse distance the-herd > 1 [
+;          fd 0.12
+;        ][
+;          move-to the-herd
+        to-flock 1 2 5 4 ;min-sep, sep, ali, coh
+          fd 0.02
+          face patch (random-int-between -80 120) -120
+
+          ;set color black
           ; Back to the status of the herd
-          set status [status] of the-herd
-        ]
+          ;set status [status] of the-herd
+
       ]
 
 
     ] [
       ; Stop status: job done!
-      set hidden? true
+      ;set hidden? true
+      if on-water? [
+          bk 0.5                       ;; mezzo passo sulla terraferma
+          ;rt 90                        ;; orientati parallelo al fiume
+        ]
+
+        ;; 2) Mantieni distanza per evitare sovrapposizioni
+        to-flock 2 4 1 0              ;; min‑sep 2, separazione forte, quasi zero coesione
+        if any? other wildebeests in-radius 2 [
+          rt random 360
+          fd 0.03                      ;; spostati su un’altra patch
+        ]
+
+        ;; 3) Avanza lentamente lungo la riva (niente attraversamento)
+        ;fd 0.01
     ]
   ]
 end
@@ -1084,7 +1106,7 @@ wildebeests-number
 wildebeests-number
 0
 100
-48.0
+36.0
 1
 1
 NIL
@@ -1144,7 +1166,7 @@ lions-number
 lions-number
 0
 10
-2.0
+1.0
 1
 1
 NIL
