@@ -117,6 +117,9 @@ to lions-generator
     let herd-x mean [xcor] of wildebeests
     ;; 2) soglia orizzontale per distinguere nord vs sud
     let mid-water-y mean [pycor] of patches with [on-water?]
+    ;; coordinata x che separa sinistra/destra
+    let mid-x (min-pxcor + max-pxcor) / 2
+
 
     ;; 3) rive “sud del fiume nord” FUORI dal corridoio ±50
     let north-bank patches with [
@@ -126,6 +129,7 @@ to lions-generator
       and [pycor] of patch-at 0 1 > mid-water-y
       and abs(pxcor - herd-x) > 40
       and abs(pxcor - herd-x) < 50
+      and pxcor > mid-x
     ]
 
       ; sud del fiume nord
@@ -423,12 +427,6 @@ to go-lions
           face probablewildebeest
           set status 2
         ]
-
-        ;; se lo stormo è numeroso (>3 entro raggio 3), gira e scappa
-        ;        if count wildebeests in-radius 3 > 3 [
-        ;          rt 180
-        ;          set status 4
-        ;        ]
       ] [
         ;; se lo gnu è sparito, torna a relax
         set status 0
@@ -457,11 +455,6 @@ to go-lions
           set waitingtime 0
         ]
       ]
-      ;      if count wildebeests in-radius 3 > 3 [
-      ;        ; escape
-      ;        rt 180
-      ;        set status 4
-      ;      ]
     ]
     ; Status 3: try to kill
     if status = 3 [
@@ -469,12 +462,26 @@ to go-lions
       set lionsattacks (lionsattacks + 1)
       set waitingtime waitingtime + 1
       set color yellow
-      fd 0.017
+      ;; ------------------------------------------------------------------
+      let base-speed       0.017         ;; velocità massima
+      let slowdown-start   1500           ;; quanti tick restare al massimo
+      let slowdown-end     2500          ;; tick in cui si raggiunge la minima
+      let min-speed        0.005         ;; non scendere oltre questo
+
+      let slow-factor 0
+      if waitingtime > slowdown-start [
+        set slow-factor (waitingtime - slowdown-start) /
+        (slowdown-end   - slowdown-start)
+        set slow-factor min list 1 slow-factor          ;; clamp 0‒1
+      ]
+
+      let speed max list min-speed (base-speed * (1 - slow-factor))
+      fd speed
+      ;; ---------------------------------------------------------
       let prey one-of wildebeests
       ifelse prey != nobody and firsttimeattack? [
-        ; approach to the prey
         face prey
-        fd 0.017
+        fd speed
         if [distance myself] of prey < 1 [
           ; predation
           ask prey [ die ]
@@ -485,54 +492,18 @@ to go-lions
         while [status = 3 and waitingtime < 50][
           set waitingtime waitingtime + 1
         ]
-
-        if waitingtime > 1700[
+;         if waitingtime > 1600[
+;          fd 0.015
+;        ]
+        if waitingtime > 3000[
           set status 0
         ]
 
       ] [
         set status 2
       ]
-      ;      set accelerationtime accelerationtime + 1
-      ;      if accelerationtime > 100 [
-      ;        rt 180
-      ;        ; Tired, stop the attack and go away
-      ;        set status 7
-      ;      ]
-      ;      if count wildebeests in-radius 3 > 3 [
-      ;        ; escape
-      ;        rt 180
-      ;        set status 4
-      ;      ]
     ]
-    ; Status 4: escape mode, warned from to many wildebeest choose to run away a bit
-    ;    if status = 4 [
-    ;      ifelse count wildebeests in-radius 15 < 1 [
-    ;        set status 1
-    ;      ] [
-    ;        ifelse count wildebeests in-radius 5 > 1 [
-    ;          ; acceleration phase
-    ;          fd 0.15
-    ;        ] [
-    ;          ; simply run
-    ;          fd 0.08
-    ;          ; one single wildebeest, try to catch him again
-    ;          set status 1
-    ;        ]
-    ;      ]
-    ;    ]
-    ;    ; Status 5: escape from a big herd, but don't try to hunt again then
-    ;    if status = 5 [
-    ;      ifelse count wildebeests in-radius 15 < 1 [
-    ;        set status 6
-    ;      ] [
-    ;        ifelse count wildebeests in-radius 5 > 1 [
-    ;          fd 0.15
-    ;        ][
-    ;          fd 0.05
-    ;        ]
-    ;      ]
-    ;    ]
+
     ; Status 6: satiated, walk away
     if status = 6 [
       set color orange
@@ -1155,19 +1126,19 @@ Line -7500403 true 150 0 150 150
 lion
 false
 0
-Polygon -16777216 true false 253 133 245 131 245 133
-Polygon -7500403 true true 2 194 13 197 30 191 38 193 38 205 20 226 20 257 27 265 38 266 40 260 31 253 31 230 60 206 68 198 75 209 66 228 65 243 82 261 84 268 100 267 103 261 77 239 79 231 100 207 98 196 119 201 143 202 160 195 166 210 172 213 173 238 167 251 160 248 154 265 169 264 178 247 186 240 198 260 200 271 217 271 219 262 207 258 195 230 192 198 210 184 227 164 242 144 259 145 284 151 277 141 293 140 299 134 297 127 273 119 270 105
-Polygon -7500403 true true -1 195 14 180 36 166 40 153 53 140 82 131 134 133 159 126 188 115 227 108 236 102 238 98 268 86 269 92 281 87 269 103 269 113
-Circle -7500403 true true 210 90 30
-Circle -7500403 true true 219 114 42
-Circle -7500403 true true 225 90 30
-Circle -7500403 true true 225 75 30
-Circle -7500403 true true 240 75 30
-Circle -7500403 true true 255 75 30
-Circle -7500403 true true 255 90 30
-Circle -7500403 true true 255 105 30
-Circle -7500403 true true 240 135 30
-Circle -7500403 true true 225 135 30
+Polygon -16777216 true false 47 133 55 131 55 133
+Polygon -7500403 true true 298 194 287 197 270 191 262 193 262 205 280 226 280 257 273 265 262 266 260 260 269 253 269 230 240 206 232 198 225 209 234 228 235 243 218 261 216 268 200 267 197 261 223 239 221 231 200 207 202 196 181 201 157 202 140 195 134 210 128 213 127 238 133 251 140 248 146 265 131 264 122 247 114 240 102 260 100 271 83 271 81 262 93 258 105 230 108 198 90 184 73 164 58 144 41 145 16 151 23 141 7 140 1 134 3 127 27 119 30 105
+Polygon -7500403 true true 301 195 286 180 264 166 260 153 247 140 218 131 166 133 141 126 112 115 73 108 64 102 62 98 32 86 31 92 19 87 31 103 31 113
+Circle -7500403 true true 60 90 30
+Circle -7500403 true true 39 114 42
+Circle -7500403 true true 45 90 30
+Circle -7500403 true true 45 75 30
+Circle -7500403 true true 30 75 30
+Circle -7500403 true true 15 75 30
+Circle -7500403 true true 15 90 30
+Circle -7500403 true true 15 105 30
+Circle -7500403 true true 30 135 30
+Circle -7500403 true true 45 135 30
 
 pentagon
 false
