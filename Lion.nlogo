@@ -208,7 +208,7 @@ end
 
 
 to import-background
-  import-pcolors "img/River_WD2.png"
+  import-pcolors "img/GrumetiDL2.png"
 end
 
 ;-------------------------------- Go functions --------------------------------
@@ -227,7 +227,7 @@ end
 
 ; ---------------------- COMPORTAMENTO DEGLI ANIMALI ---------------------------
 to go-wildebeests
-	ask wildebeests [
+    ask wildebeests [
     ifelse status != 4 [
       ; if not hidden (job done status)
       if status != 2[
@@ -267,8 +267,14 @@ to go-wildebeests
       ; 4) Check if status is 4
       ; OBS: lions attack a wildebeest from radius 12, but wildebeest see it only in radius 10
       ;  why? wildebeests, that are usually vigilant, are less vigilant if they're migrating
-      if any? (turtle-set lions lionesses) in-radius 20 [
+      ifelse high-grass[
+        if any? (turtle-set lions lionesses) in-radius 10 [
         set status 2
+      ]
+      ][
+        if any? (turtle-set lions lionesses) in-radius 20 [
+        set status 2
+      ]
       ]
       ; 5) Check if status is 6
       let closetowaterfuga? (count patches in-radius 3 with [on-water?] > 0)
@@ -398,13 +404,16 @@ to go-lions
         fd 0.05
       ]
     ]
+  ]
+  ifelse high-grass[
+    ask lions[
 
     ; Status 0: relax, random walk before a alert
     if status = 0 [
       rt random-int-between -10 10
       ;fd 0.01
       ; Check for a possible alert
-      let possiblewildebeest one-of wildebeests in-radius 50
+      let possiblewildebeest one-of wildebeests in-radius 35
       if possiblewildebeest != nobody and firsttimeattack? [
         ; if alert
         face possiblewildebeest
@@ -415,7 +424,7 @@ to go-lions
     ; OBS: not a real ambush, cause when wildebeests migrate they're too much annd they also ignore more predators
     if status = 1 [
       ;; cerca uno gnu entro raggio 50
-      let possiblewildebeest one-of wildebeests with [status = 1] in-radius 50
+      let possiblewildebeest one-of wildebeests with [status = 1] in-radius 35
       ifelse possiblewildebeest != nobody and firsttimeattack? [
         ;; orientati verso lo gnu
         face possiblewildebeest
@@ -424,7 +433,7 @@ to go-lions
 
 
         ;; se trovi uno gnu isolato (meno di 3 nel raggio 2) entro 12 passi, vai a targeting
-        let probablewildebeest one-of wildebeests with [status = 1] in-radius 25
+        let probablewildebeest one-of wildebeests with [status = 1] in-radius 15
         if probablewildebeest != nobody and firsttimeattack? [
           face probablewildebeest
           set status 2
@@ -437,7 +446,7 @@ to go-lions
     ; Status 2: targeting mode, near to on or more target prey, wait until try to attack
     if status = 2 [
       ; try to attack (if exist a real target: wildebeest in radius 5 with only 1 neighbor)
-      let prey one-of wildebeests in-radius 40
+      let prey one-of wildebeests in-radius 25
       ifelse prey != nobody and firsttimeattack? [
         ; Approach the target if is enough alone
         face prey
@@ -466,7 +475,7 @@ to go-lions
       set color yellow
       ;; ------------------------------------------------------------------
       let base-speed       0.017         ;; velocità massima
-      let slowdown-start   1500           ;; quanti tick restare al massimo
+      let slowdown-start   1500          ;; quanti tick restare al massimo
       let slowdown-end     2500          ;; tick in cui si raggiunge la minima
       let min-speed        0.005         ;; non scendere oltre questo
 
@@ -514,6 +523,125 @@ to go-lions
       fd 0.01
     ]
   ]
+  ][
+    ask lions [
+      ; Status 0: relax, random walk before a alert
+      if status = 0 [
+        rt random-int-between -10 10
+        ;fd 0.01
+        ; Check for a possible alert
+        let possiblewildebeest one-of wildebeests in-radius 50
+        if possiblewildebeest != nobody and firsttimeattack? [
+          ; if alert
+          face possiblewildebeest
+          set status 1
+        ]
+      ]
+      ; Status 1: alerted, face the possible prey and slowly try to get near to it/them
+      ; OBS: not a real ambush, cause when wildebeests migrate they're too much annd they also ignore more predators
+      if status = 1 [
+        ;; cerca uno gnu entro raggio 50
+        let possiblewildebeest one-of wildebeests with [status = 1] in-radius 50
+        ifelse possiblewildebeest != nobody and firsttimeattack? [
+          ;; orientati verso lo gnu
+          face possiblewildebeest
+          fd 0.02
+          ;; avanza lentamente solo se lo gnu è su acqua
+
+
+          ;; se trovi uno gnu isolato (meno di 3 nel raggio 2) entro 12 passi, vai a targeting
+          let probablewildebeest one-of wildebeests with [status = 1] in-radius 25
+          if probablewildebeest != nobody and firsttimeattack? [
+            face probablewildebeest
+            set status 2
+          ]
+        ] [
+          ;; se lo gnu è sparito, torna a relax
+          set status 0
+        ]
+      ]
+      ; Status 2: targeting mode, near to on or more target prey, wait until try to attack
+      if status = 2 [
+        ; try to attack (if exist a real target: wildebeest in radius 5 with only 1 neighbor)
+        let prey one-of wildebeests in-radius 40
+        ifelse prey != nobody and firsttimeattack? [
+          ; Approach the target if is enough alone
+          face prey
+          fd 0.01
+          set status 3
+        ] [
+          ;        ; Wait for attack
+          set waitingtime waitingtime + 1
+          let prey2 one-of wildebeests in-radius 5
+          if prey2 = nobody [
+            ; Prey no more killable --> wrong targeting
+            set status 1
+          ]
+          if waitingtime > 100 [
+            ; Impossible targeting, give up for the moment
+            set status 1
+            set waitingtime 0
+          ]
+        ]
+      ]
+      ; Status 3: try to kill
+      if status = 3 [
+        ; try to kill
+        set lionsattacks (lionsattacks + 1)
+        set waitingtime waitingtime + 1
+        set color yellow
+        ;; ------------------------------------------------------------------
+        let base-speed       0.017         ;; velocità massima
+        let slowdown-start   2000           ;; quanti tick restare al massimo
+        let slowdown-end     2500          ;; tick in cui si raggiunge la minima
+        let min-speed        0.005         ;; non scendere oltre questo
+
+        let slow-factor 0
+        if waitingtime > slowdown-start [
+          set slow-factor (waitingtime - slowdown-start) /
+          (slowdown-end   - slowdown-start)
+          set slow-factor min list 1 slow-factor          ;; clamp 0‒1
+        ]
+
+        let speed max list min-speed (base-speed * (1 - slow-factor))
+        fd speed
+        ;; ---------------------------------------------------------
+        let prey one-of wildebeests
+        ifelse prey != nobody and firsttimeattack? [
+          face prey
+          fd speed
+          if [distance myself] of prey < 1 [
+            ; predation
+            ask prey [ die ]
+            set wildebeestseatenbylions wildebeestseatenbylions + 1
+            set status 4
+          ]
+
+          while [status = 3 and waitingtime < 50][
+            set waitingtime waitingtime + 1
+          ]
+          ;         if waitingtime > 1600[
+          ;          fd 0.015
+          ;        ]
+          if waitingtime > 3000[
+            set status 0
+          ]
+
+        ] [
+          set status 2
+        ]
+      ]
+
+      ; Status 4: satiated, walk away
+      if status = 4 [
+        set color orange
+        set firsttimeattack? false
+        rt random-int-between -10 10
+        fd 0.01
+      ]
+    ]
+  ]
+
 end
 
 to go-lionesses
@@ -826,7 +954,7 @@ SWITCH
 77
 lions?
 lions?
-1
+0
 1
 -1000
 
@@ -848,7 +976,7 @@ HORIZONTAL
 SWITCH
 0
 184
-109
+120
 217
 high-grass
 high-grass
@@ -863,7 +991,7 @@ SWITCH
 147
 lionesses?
 lionesses?
-0
+1
 1
 -1000
 
