@@ -486,7 +486,7 @@ to go-lions
           ; predation
           ask prey [ die ]
           set wildebeestseatenbylions wildebeestseatenbylions + 1
-          set status 6
+          set status 4
         ]
 
         while [status = 3 and waitingtime < 50][
@@ -504,37 +504,13 @@ to go-lions
       ]
     ]
 
-    ; Status 6: satiated, walk away
-    if status = 6 [
+    ; Status 4: satiated, walk away
+    if status = 4 [
       set color orange
       set firsttimeattack? false
       rt random-int-between -10 10
       fd 0.01
-      ;      if count wildebeests in-radius 3 > 3 [
-      ;        ; escape
-      ;        rt 180
-      ;        set status 5
-      ;      ]
     ]
-    ;    ; Status 7: failed attack, go away and try again later
-    ;    if status = 7 [
-    ;      fd 0.05
-    ;      rt random-int-between -10 10
-    ;      if count wildebeests in-radius 3 > 3 [
-    ;        ;escape
-    ;        rt 180
-    ;        set status 4
-    ;      ]
-
-    ; Handle lions life
-    ;    if count wildebeests-on neighbors > 4 [
-    ;      die
-    ;    ]
-
-;    if count wildebeests in-radius 20 = 0 or waitingtime > 50 [
-;          ; normal status
-;          set status 0
-;        ]
   ]
 end
 
