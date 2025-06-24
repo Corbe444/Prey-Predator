@@ -518,14 +518,14 @@ end
 
 to go-lionesses
   ; Una sola leonessa (la "leader") sceglie la preda
-;  let leader-lioness min-one-of lionesses [who]
-;  let target-prey one-of wildebeests
-;  if target-prey != nobody [
-;
-;  ask lionesses [
-;    set group-target target-prey
-;  ]
-;]
+  let leader-lioness min-one-of lionesses [who]
+  let target-prey one-of wildebeests
+  if target-prey != nobody [
+
+  ask lionesses [
+    set group-target target-prey
+  ]
+]
 
 ask lionesses [
     ;; prima di qualsiasi movimento, controllo il patch-ahead:
@@ -546,10 +546,12 @@ ask lionesses [
         face possiblewildebeest
         fd 0.02
         ; Targeting della preda: controlla una probabile preda
-        let probablewildebeest one-of wildebeests  in-radius 25
+        let probablewildebeest one-of wildebeests  in-radius 20
         if probablewildebeest != nobody [
           face probablewildebeest
+          ask lionesses[
           set status 2
+          ]
         ]
       ][
         ; falso allarme
@@ -607,8 +609,11 @@ ask lionesses [
           fd speed
           if distance group-target < 1 [
             ask group-target [
-               set color red
               die
+            ]
+            ;; appena la preda muore, tutte le leonesse si fermano
+            ask lionesses [
+              set status 0
             ]
             set wildebeestseatenbylions wildebeestseatenbylions + 1
             set group-target nobody
@@ -625,22 +630,11 @@ ask lionesses [
     ]
 
 
-    ; Status 6: sazio, allontanati
+    ; Status 4: sazio, allontanati
     if status = 4 [
       set color orange
-      fd 0.05
-      rt random-int-between -10 10
-      if count wildebeests in-radius 3 > 3 [
-        ; fuga
-        rt 180
-        set status 5
-      ]
     ]
   ]
-
-    ; Status 7: attacco fallito, allontanati e riprova più tardi
-
-
 end
 
 
