@@ -29,7 +29,7 @@ breed [lionesses lioness ]
 ; - timealone: time alone in water
 ; - firstimeatacked?: is the first time (of each attack) that the wildebeest notice the predator?
 ; Assumption: a wildebeest die if spend to much time alone (herd effect)
-wildebeests-own [target waitforleadership leadership? flockmates nearest-neighbor status firsttimeattacked? tutti?]
+wildebeests-own [target waitforleadership leadership? flockmates nearest-neighbor status firsttimeattacked? tutti? waitingtime wiggle-ampl]
 lions-own [status waitingtime accelerationtime firsttimeattack?]
 lionesses-own [status waitingtime accelerationtime flockmates nearest-neighbor group-target]
 
@@ -239,6 +239,10 @@ end
 
 ; ---------------------- COMPORTAMENTO DEGLI ANIMALI ---------------------------
 to go-wildebeests
+  ask wildebeests [
+    set wiggle-ampl 8           ;; ampiezza massima ±8°
+  ]
+
     ask wildebeests [
     ifelse status != 4 [
       ; if not hidden (job done status)
@@ -322,7 +326,7 @@ to go-wildebeests
       ]
    ; Status 2: predation --> evasion
       if status = 2 [
-        ask wildebeests with [status != 2] [
+        ask wildebeests with [status != 2 and status != 3] [
           if tutti?[
             set status 2
             set color green
@@ -332,18 +336,37 @@ to go-wildebeests
         ; escape
         ifelse firsttimeattacked? [
           ; escape to the right
-          ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self > 1 [
-            face patch -120 -100
+          ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self < 1 [
+            let goal patch -120 -120
+            let desired-heading towards goal
+            ;; mescola 80% direzione al goal + 20% virata casuale
+            set heading 0.8 * desired-heading + 0.3 * (heading + random wiggle-ampl * 2 - wiggle-ampl)
             fd 0.01
           ] [
             ;escape to the left
-            face patch -120 -100
+            let goal patch 0 -120
+            let desired-heading towards goal
+            ;; mescola 80% direzione al goal + 20% virata casuale
+            set heading 0.8 * desired-heading + 0.3 * (heading + random wiggle-ampl * 2 - wiggle-ampl)
             fd 0.01
           ]
           set firsttimeattacked? false
         ] [
-          set heading (heading + random-int-between -10 10)
-          fd 0.04
+          ;set heading (heading + random-int-between -10 10)
+          let base-speed       0.025         ;; velocità massima
+          let slowdown-start   200          ;; quanti tick restare al massimo
+          let slowdown-end     500          ;; tick in cui si raggiunge la minima
+          let min-speed        0.01         ;; non scendere oltre questo
+
+          let slow-factor 0
+          if waitingtime > slowdown-start [
+            set slow-factor (waitingtime - slowdown-start) /
+            (slowdown-end   - slowdown-start)
+            set slow-factor min list 1 slow-factor          ;; clamp 0‒1
+          ]
+
+          let speed max list min-speed (base-speed * (1 - slow-factor))
+          fd speed
         ]
         ; if no more hungry lions near to you --> pursuit until reach again the herd
         if count lions with [status != 4] in-radius 10 < 1 [
