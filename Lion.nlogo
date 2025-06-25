@@ -50,8 +50,10 @@ to setup
   ;let patches-in-box patches with [pxcor > 100 and pycor < -100 ] ;100 -100
   ; Set number of initial sub-group (100k each subgroup) of wildebeests
   set cont 1
+  let patches-in-box patches with [pxcor > -20 and pxcor < 20 and pycor < -60 and pycor > -80] ;100 -100
+  let patches-in-box-lion patches with [pxcor > -20 and pxcor < 20 and pycor < -50 and pycor > -80] ;100 -100
   ; Call to wildebeests generator with default area as parameter
-  wildebeest-generator
+  wildebeest-generator (patches-in-box)
   ; Set crowding? as initially false
   set crowding? false
   ; Set firstleader? as initially false
@@ -67,75 +69,83 @@ end
 
 
 ;; genera un gruppo di gnu fra i due fiumi
-to wildebeest-generator
+; Generate wildebeest and distribute them normally in the bottom-right corner
+to wildebeest-generator [box]
+  ; Default shape for wildebeests agent
   set-default-shape wildebeests "cow"
+  ; Number of wildebeests
   let pop wildebeests-number
-
-  ;; 1) definisco l’area di spawn attorno al centro
-  let valid-patches patches with [ distancexy 0 0 <= 10 and not on-water? ]
-
-  ;; 2) scelgo un solo centro di branco dentro quest’area
-  let cluster-center one-of valid-patches
-  let cx [pxcor] of cluster-center
-  let cy [pycor] of cluster-center
-
-  ;; 3) creo tutti gli gnu sparsi intorno al centro
+  let ys [ pycor ] of box
+  let xs [ pxcor ] of box
+  let min-x min xs
+  let min-y min ys
+  let max-x max xs
+  let max-y max ys
+  let mid-x mean list min-x max-x
+  let mid-y mean list min-y max-y
+  let w max-x - min-x
+  let h max-y - min-y
+  ; Create "pop" wildebeests
   create-wildebeests pop [
-    ;; ---------- attributi base ----------
-    set size               3.5
-    set color              black
-    set status             0
-    set waitforleadership  0
-    set leadership?        false
-    set firsttimeattacked? true
-    set tutti?             true
-    set flockmates         no-turtles
-    ;; ------------------------------------
+    loop [
+      ; Default charactertistics and parameters
+      set size 3.5
+      set color black
+      set status 0
+      set waitforleadership 0
+      ; Default leadership value --> no default leaders, choosen at the crossing moment
+      set leadership? false
+      set tutti? true
 
-    ;; tentativi finché non trovo una patch di terra entro 50 blocchi
-    let placed? false
-    while [not placed?] [
-      let x random-normal cx 5
-      let y random-normal cy 5
-      if distancexy x y <= 50 [
-        let p patch x y
-        if p != nobody and not [on-water?] of p [
-          move-to p
-          set placed? true
-        ]
-      ]
+      set firsttimeattacked? true
+      set flockmates no-turtles
+      ; Set normally distributed position in the default area
+      ; OBS: normal cause replicate better a herd than a uniform
+      let x random-normal mid-x (w / 6)
+      if x > max-x [ set x max-x ]
+      if x < min-x [ set x min-x ]
+      set xcor x
+      let y random-normal mid-y (h / 6)
+      if y > max-y [ set y max-y ]
+      if y < min-y [ set y min-y ]
+      set ycor y
+      if not any? other turtles-here [ stop ]
     ]
-  ]
+    ; Center in patch
+    move-to patch-here
+]
+
 end
+
 
 
 
 to lions-generator
   if lions? [
     set-default-shape lions "lion"
-    ;; 1) ascissa media del branco di gnu
-    let herd-x mean [xcor] of wildebeests
-    ;; 2) soglia orizzontale per distinguere nord vs sud
-    let mid-water-y mean [pycor] of patches with [on-water?]
-    ;; coordinata x che separa sinistra/destra
-    let mid-x (min-pxcor + max-pxcor) / 2
-
-
-    ;; 3) rive “sud del fiume nord” FUORI dal corridoio ±50
-    let north-bank patches with [
-      not on-water?
-      and patch-at 0 1 != nobody
-      and [on-water?] of patch-at 0 1
-      and [pycor] of patch-at 0 1 > mid-water-y
-      and abs(pxcor - herd-x) > 40
-      and abs(pxcor - herd-x) < 50
-      and pxcor > mid-x
-    ]
+;    ;; 1) ascissa media del branco di gnu
+;    let herd-x mean [xcor] of wildebeests
+;    ;; 2) soglia orizzontale per distinguere nord vs sud
+;    let mid-water-y mean [pycor] of patches with [on-water?]
+;    ;; coordinata x che separa sinistra/destra
+;    let mid-x (min-pxcor + max-pxcor) / 2
+;
+;
+;    ;; 3) rive “sud del fiume nord” FUORI dal corridoio ±50
+;    let north-bank patches with [
+;      not on-water?
+;      and patch-at 0 1 != nobody
+;      and [on-water?] of patch-at 0 1
+;      and [pycor] of patch-at 0 1 > mid-water-y
+;      and abs(pxcor - herd-x) > 40
+;      and abs(pxcor - herd-x) < 50
+;      and pxcor > mid-x
+;    ]
 
       ; sud del fiume nord
-      let nb-center one-of north-bank
-      let nx [pxcor] of nb-center
-      let ny [pycor] of nb-center
+;      let nb-center one-of north-bank
+;      let nx [pxcor] of nb-center
+;      let ny [pycor] of nb-center
       create-lions lions-number [
         set firsttimeattack? true
         set size 3.5
@@ -144,16 +154,18 @@ to lions-generator
         set accelerationtime 0
         set waitingtime 0
         let placed? false
-        while [not placed?] [
-          let x random-normal nx 2
-          let y random-normal ny 2
+        ;while [not placed?] [
+          let x  42
+          let y  -12
           let p patch x y
-          if p != nobody and not [on-water?] of p [
-            move-to p
-            set placed? true
-          ]
+          move-to p
+        set placed? true
+;          if p != nobody and not [on-water?] of p [
+;            move-to p
+;            set placed? true
+;          ]
         ]
-      ]
+
     ]
 
 end
@@ -334,7 +346,7 @@ to go-wildebeests
           fd 0.04
         ]
         ; if no more hungry lions near to you --> pursuit until reach again the herd
-        if count lions with [status = 6] in-radius 10 < 1 [
+        if count lions with [status != 4] in-radius 10 < 1 [
           ; pursuit mode
           set status 3
           set firsttimeattacked? true
@@ -364,8 +376,6 @@ to go-wildebeests
 
 
     ] [
-      ; Stop status: job done!
-      ;set hidden? true
       if on-water? [
           bk 0.5                       ;; mezzo passo sulla terraferma
           ;rt 90                        ;; orientati parallelo al fiume
@@ -377,9 +387,6 @@ to go-wildebeests
           rt random 360
           fd 0.03                      ;; spostati su un’altra patch
         ]
-
-        ;; 3) Avanza lentamente lungo la riva (niente attraversamento)
-        ;fd 0.01
     ]
   ]
 end
@@ -838,7 +845,7 @@ to-report random-int-between [min-num max-num]
 end
 
 to-report on-water?
-  report (shade-of? pcolor blue) or (shade-of? pcolor sky) or (shade-of? pcolor cyan)
+  report (shade-of? pcolor blue) or (shade-of? pcolor sky) or (shade-of? pcolor cyan)or (shade-of? pcolor grey)
 end
 
 to-report between-rivers?
@@ -980,7 +987,7 @@ SWITCH
 217
 high-grass
 high-grass
-1
+0
 1
 -1000
 
