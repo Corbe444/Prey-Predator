@@ -50,8 +50,7 @@ to setup
   ;let patches-in-box patches with [pxcor > 100 and pycor < -100 ] ;100 -100
   ; Set number of initial sub-group (100k each subgroup) of wildebeests
   set cont 1
-  let patches-in-box patches with [pxcor > -20 and pxcor < 20 and pycor < -60 and pycor > -80] ;100 -100
-  let patches-in-box-lion patches with [pxcor > -20 and pxcor < 20 and pycor < -50 and pycor > -80] ;100 -100
+  let patches-in-box patches with [pxcor > -15 and pxcor < 15 and pycor < -60 and pycor > -80] ;100 -100
   ; Call to wildebeests generator with default area as parameter
   wildebeest-generator (patches-in-box)
   ; Set crowding? as initially false
@@ -292,9 +291,8 @@ to go-wildebeests
         set status 2
       ]
       ]
-      ; 5) Check if status is 6
-      let closetowaterfuga? (count patches in-radius 3 with [on-water?] > 0)
-      if ycor < -70 and closetowaterfuga?[
+
+      if ycor < -118 [
         set status 4
       ]
       ;Status 0: normal flocking before the river banks
@@ -387,9 +385,10 @@ to go-wildebeests
 ;          fd 0.12
 ;        ][
 ;          move-to the-herd
+        face patch (random-int-between -120 120) -120
         to-flock 1 2 5 4 ;min-sep, sep, ali, coh
         fd 0.015
-        face patch (random-int-between -80 120) -120
+
 
           ;set color black
           ; Back to the status of the herd
@@ -399,22 +398,15 @@ to go-wildebeests
 
 
     ] [
-      if on-water? [
-          bk 0.5                       ;; mezzo passo sulla terraferma
-          ;rt 90                        ;; orientati parallelo al fiume
-        ]
 
-        ;; 2) Mantieni distanza per evitare sovrapposizioni
-        to-flock 2 4 1 0              ;; min‑sep 2, separazione forte, quasi zero coesione
-        if any? other wildebeests in-radius 2 [
-          rt random 360
-          fd 0.03                      ;; spostati su un’altra patch
-        ]
+
+      ;set heading 180 + (random-float wiggle-ampl * 2 - wiggle-ampl)
+      set hidden? true
     ]
   ]
 end
 
-
+;--------------------------------------------------------------------------------------------
 
 
 ; Go function for lions
