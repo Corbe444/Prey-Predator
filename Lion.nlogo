@@ -51,6 +51,8 @@ to setup
   ; Set number of initial sub-group (100k each subgroup) of wildebeests
   set cont 1
   let patches-in-box patches with [pxcor > -15 and pxcor < 15 and pycor < -60 and pycor > -80] ;100 -100
+  ;box leonesse
+  let patches-in-box-lionesses patches with [pxcor > 42 and pxcor < 46 and pycor < -12 and pycor > -15] ;100 -100
   ; Call to wildebeests generator with default area as parameter
   wildebeest-generator (patches-in-box)
   ; Set crowding? as initially false
@@ -122,30 +124,7 @@ end
 to lions-generator
   if lions? [
     set-default-shape lions "lion"
-;    ;; 1) ascissa media del branco di gnu
-;    let herd-x mean [xcor] of wildebeests
-;    ;; 2) soglia orizzontale per distinguere nord vs sud
-;    let mid-water-y mean [pycor] of patches with [on-water?]
-;    ;; coordinata x che separa sinistra/destra
-;    let mid-x (min-pxcor + max-pxcor) / 2
-;
-;
-;    ;; 3) rive “sud del fiume nord” FUORI dal corridoio ±50
-;    let north-bank patches with [
-;      not on-water?
-;      and patch-at 0 1 != nobody
-;      and [on-water?] of patch-at 0 1
-;      and [pycor] of patch-at 0 1 > mid-water-y
-;      and abs(pxcor - herd-x) > 40
-;      and abs(pxcor - herd-x) < 50
-;      and pxcor > mid-x
-;    ]
-
-      ; sud del fiume nord
-;      let nb-center one-of north-bank
-;      let nx [pxcor] of nb-center
-;      let ny [pycor] of nb-center
-      create-lions lions-number [
+      create-lions 1 [
         set firsttimeattack? true
         set size 3.5
         set color red
@@ -168,58 +147,41 @@ to lions-generator
     ]
 
 end
-
-
 to lionesses-generator
   if lionesses? [
     set-default-shape lionesses "lion"
-    let herd-x mean [xcor] of wildebeests
-    let mid-water-y mean [pycor] of patches with [on-water?]
-    let mid-x (min-pxcor + max-pxcor) / 2
-
-    let north-bank patches with [
-      not on-water?
-      and patch-at 0 1 != nobody
-      and [on-water?] of patch-at 0 1
-      and [pycor] of patch-at 0 1 > mid-water-y
-      and abs(pxcor - herd-x) > 40
-      and abs(pxcor - herd-x) < 50
-      and pxcor > mid-x
-    ]
-
-
-    if any? north-bank [
-      let nb-center one-of north-bank
-      let nx [pxcor] of nb-center
-      let ny [pycor] of nb-center
-      create-lionesses lionesses-number [
-        set size 3.5
-        set color yellow
-        set status 0
-        set accelerationtime 0
-        set waitingtime 0
-        let placed? false
-        while [not placed?] [
-          let x random-normal nx 2
-          let y random-normal ny 2
-          let p patch x y
-          if p != nobody and not [on-water?] of p [
-            move-to p
-            set placed? true
-          ]
-        ]
-      ]
+    ;; punto di riferimento
+    let cx 42
+    let cy -12
+    ;; crea 3 leonesse
+    create-lionesses 3 [
+      set size 3.5
+      set color yellow
+      set status 0
+      set accelerationtime 0
+      set waitingtime 0
+      ;; posizionamento con offset casuale entro un raggio di 3 patch
+      let angle random-float 360
+      let dist random-float 5
+      setxy (cx + dist * cos angle) (cy + dist * sin angle)
     ]
   ]
 end
+
 ;-------------------------------- SETUP --------------------------------
 
 
 
 
-
 to import-background
-  import-pcolors "img/GrumetiDL2.png"
+  import-pcolors "img/GrumetiDL.png"
+  if high-grass[
+    import-pcolors "img/GrumetiDH.png"
+  ]
+  ifelse day[
+  ][
+    import-pcolors "img/GrumetiNL.png"
+  ]
 end
 
 ;-------------------------------- Go functions --------------------------------
@@ -386,7 +348,7 @@ to go-wildebeests
 ;        ][
 ;          move-to the-herd
         face patch (random-int-between -120 120) -120
-        to-flock 1 2 5 4 ;min-sep, sep, ali, coh
+        to-flock 3 2 5 4 ;min-sep, sep, ali, coh
         fd 0.015
 
 
@@ -400,6 +362,9 @@ to go-wildebeests
     ] [
 
 
+        face patch (random-int-between -120 120) -120
+        to-flock 0 2 5 4 ;min-sep, sep, ali, coh
+        fd 0.015
       ;set heading 180 + (random-float wiggle-ampl * 2 - wiggle-ampl)
       set hidden? true
     ]
@@ -709,7 +674,6 @@ ask lionesses [
       ]
     ]
     if status = 2 [
-      set color green
       ifelse group-target != nobody and distance group-target < 40 [
         face group-target
         fd 0.01
@@ -980,21 +944,6 @@ lions?
 1
 -1000
 
-SLIDER
-0
-78
-172
-111
-lions-number
-lions-number
-0
-10
-1.0
-1
-1
-NIL
-HORIZONTAL
-
 SWITCH
 0
 184
@@ -1039,7 +988,7 @@ SWITCH
 257
 day
 day
-0
+1
 1
 -1000
 
