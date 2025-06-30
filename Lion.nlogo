@@ -824,7 +824,17 @@ to-report random-int-between [min-num max-num]
 end
 
 to-report on-water?
-  report (shade-of? pcolor blue) or (shade-of? pcolor sky) or (shade-of? pcolor cyan)or (shade-of? pcolor grey)
+  ifelse day[
+    report (shade-of? pcolor blue) or (shade-of? pcolor sky) or (shade-of? pcolor cyan)or (shade-of? pcolor grey)
+  ][
+    report
+    ;; la patch corrente è acqua
+    (pcolor >= 91.5 and pcolor <= 92)
+    and
+    ;; ci sono almeno 10 patch intorno (raggio 2) che sono acqua
+    (count patches in-radius 2 with [ pcolor >= 91.5 and pcolor <= 92 ] >= 13)
+  ]
+
 end
 
 to-report between-rivers?
