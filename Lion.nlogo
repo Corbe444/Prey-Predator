@@ -154,7 +154,7 @@ to lionesses-generator
     set-default-shape lionesses "lion"
     ;; punto di riferimento
     let cx 42
-    let cy -12
+    let cy -16
     ;; crea 3 leonesse
     create-lionesses 3 [
       set size 3.5
@@ -538,8 +538,12 @@ to go-lionesses
     set group-target target-prey
   ]
 ]
+
+
 let detection-radius ifelse-value high-grass  [35] [50]
 ask lionesses [
+
+
     ;; prima di qualsiasi movimento, controllo il patch-ahead:
     if status = 0 [
       ;; cerco uno gnù in status 1 (vicino all'acqua) entro raggio 50
@@ -577,6 +581,9 @@ ask lionesses [
         set status 3
       ] [
         set waitingtime waitingtime + 1
+        if one-of wildebeests in-radius 5 = nobody [
+          set status 1
+        ]
         if waitingtime > 100 [
           set status 1
           set waitingtime 0
@@ -627,8 +634,29 @@ ask lionesses [
           set group-target nobody
           set status 0
         ]
+
+        while [status = 3 and waitingtime < 50] [
+          set waitingtime waitingtime + 1
+        ]
+
+        if waitingtime > 3000 [
+          ;; —————————————————————————————————————————
+          ;; Se c’è un’altra leonessa troppo vicina, separati
+          let close-friend other lionesses in-radius 2
+          if any? close-friend [
+            ;; gira lontano dal centro di massa delle vicine
+            let avg-heading mean [towards myself] of close-friend
+            rt (avg-heading + 180)
+            fd 0.1
+            ;; ricomincia il loop sul nuovo patch
+            stop
+          ]
+          set status 0
+        ]
       ] [
+
         set status 2
+
       ]
     ]
 
@@ -778,7 +806,7 @@ wildebeests-number
 wildebeests-number
 0
 100
-46.0
+43.0
 1
 1
 NIL
@@ -836,7 +864,7 @@ SWITCH
 217
 high-grass
 high-grass
-0
+1
 1
 -1000
 
