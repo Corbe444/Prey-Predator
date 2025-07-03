@@ -6,8 +6,8 @@
 ; - crowding?: is time to flocking crowding to the river banks while waiting for the leaders choice?
 ; - firstleader?: is the wildebeest a hypotetic first leader?
 ; - approachpoint: river approach point for the herd (first leader choose it)
-; - lionsattacks: number of lion's attacks
-globals [escape-heading wildebeestseatenbylions wildebeestseatenbycrocs wildebeestsdrowned cont crowding? firstleader? approachpoint lionsattacks upper-river lower-river]
+
+globals [escape-heading wildebeestseatenbylions wildebeestseatenbylionesses  cont crowding? firstleader? approachpoint ]
 ;Define new turtle breed: Wildebeest, Lions
 breed [wildebeests wildebeest] ;[plural singolar]
 breed [lions lion]
@@ -44,8 +44,7 @@ to setup
 
   ;background
   import-background
-  set upper-river max [pycor] of patches with [on-water?]
-  set lower-river min [pycor] of patches with [on-water?]
+
   ; Define wildebeests default area
   ;let patches-in-box patches with [pxcor > 100 and pycor < -100 ] ;100 -100
   ; Set number of initial sub-group (100k each subgroup) of wildebeests
@@ -93,7 +92,7 @@ to wildebeest-generator [box]
       set size 3.5
       ifelse day [
       set color black
-      ][set color brown - 3]
+      ][set color gray - 3]
       set status 0
       set waitforleadership 0
       ; Default leadership value --> no default leaders, choosen at the crossing moment
@@ -208,45 +207,20 @@ to go-wildebeests
   ]
 
     ask wildebeests [
-    ifelse status != 4 [
+    ifelse status != 5 [
       ; if not hidden (job done status)
-      if status != 2[
-        ; if not in evasion face a random target (over the river)
-        ;commento in quanto lentissimo come codice
-;        if any? patches in-radius 50 with [on-water?] [
-;        let nearest-water min-one-of patches in-radius 50 with [on-water?] [distance myself]
-;        face nearest-water
-;        ]
-
-        ;punta nord
-;        set target patch (random-int-between -80 120) 120
-;        face target
-      ]
       ; Eevasive wildebeest that change to status 2 cause finish to cross the river and forget to be in status 4
-      if color = green [
+      if color = violet - 1 [
         set status 2
       ]
       ; Wildebeest in pursuit that change to status 3 cause finish to cross the river and forget to be in status 5
       if color = blue [
         set status 3
       ]
-      ; Set number of leaders (can be more then 1, but not too much, cause when wildebeests are in the water
-      ; the ones on the banks simply follow the herd and not the leaders anymore)
-      let number-of-leaders random-int-between 1 5
-      ; 0) Default Status: 0 - before arriving at the river banks
-      ; 1) Check if Status is 1
       let closetowater? (count patches in-radius 3 with [on-water?] > 0 and status = 0)
       if closetowater? [
         set status 1
       ]
-      ; 3) Check if Status is 3
-;      if (on-water? = false) and crossing? [
-;        set status 3
-;        set crossing? false
-;      ]
-      ; 4) Check if status is 4
-      ; OBS: lions attack a wildebeest from radius 12, but wildebeest see it only in radius 10
-      ;  why? wildebeests, that are usually vigilant, are less vigilant if they're migrating
       ifelse high-grass [
         ;; caso “erba alta”
         ifelse day [
@@ -275,7 +249,7 @@ to go-wildebeests
         ]
       ]
       if ycor < -118 [
-        set status 4
+        set hidden? true
       ]
       ;Status 0: normal flocking before the river banks
       if status = 0 [
@@ -309,25 +283,25 @@ to go-wildebeests
         ask wildebeests with [status != 2 and status != 3] [
           if tutti?[
             set status 2
-            set color green
+            set color violet - 1
           ]
         ]
-        set color green
+        set color violet - 1
         ; escape
         ifelse firsttimeattacked? [
           ; escape to the right
           ifelse count [turtles-on patch-set (list patch-at 1 0 patch-at -1 0 patch-at -1 -1)] of self < 1 [
-            let goal patch -120 -120
+            let goal patch -80 -120
             let desired-heading towards goal
             ;; mescola 80% direzione al goal + 20% virata casuale
-            set heading 0.8 * desired-heading + 0.3 * (heading + random wiggle-ampl * 2 - wiggle-ampl)
+            set heading 0.9 * desired-heading + 0.3 * (heading + random wiggle-ampl * 2 - wiggle-ampl)
             fd 0.01
           ] [
             ;escape to the left
-            let goal patch 0 -120
+            let goal patch -50 -120
             let desired-heading towards goal
             ;; mescola 80% direzione al goal + 20% virata casuale
-            set heading 0.8 * desired-heading + 0.3 * (heading + random wiggle-ampl * 2 - wiggle-ampl)
+            set heading 0.9 * desired-heading + 0.3 * (heading + random wiggle-ampl * 2 - wiggle-ampl)
             fd 0.01
           ]
           set firsttimeattacked? false
@@ -360,33 +334,35 @@ to go-wildebeests
       if status = 3 [
         ; come back to the herd
         set color blue
-        ;let the-herd (one-of wildebeests in-radius 50)
-        ;face the-herd
-        ; if about to catch up with the herd, don't pass the leader, only pull even with it
-;        ifelse distance the-herd > 1 [
-;          fd 0.12
-;        ][
-;          move-to the-herd
-        face patch (random-int-between -120 120) -120
+        face patch (random-int-between -120 0) -120
         to-flock 3 2 5 4 ;min-sep, sep, ali, coh
         fd 0.015
+        if (count lions in-radius 30 < 1) [
+         ;set color black
+         set status 4
+        ]
 
 
-          ;set color black
-          ; Back to the status of the herd
-          ;set status [status] of the-herd
+    ]
+      if status = 4 [
+        if (not any? wildebeests with [status = 2 or status = 3]) [
+          set color black
+          set target patch (random-int-between -120 0) -120
+          face target
+          ; if not, default flocking, quite compact herd in march
+          to-flock 3 2 5 4  ;min-sep, sep, ali, coh
+          fd 0.01
 
-      ]
+        ]
+    ]
+    ][
 
 
-    ] [
-
-
-        face patch (random-int-between -120 120) -120
-        to-flock 0 2 5 4 ;min-sep, sep, ali, coh
-        fd 0.015
+      ;face patch (random-int-between -120 0) -120
+      to-flock 0 2 5 4 ;min-sep, sep, ali, coh
+      fd 0.015
       ;set heading 180 + (random-float wiggle-ampl * 2 - wiggle-ampl)
-      set hidden? true
+      ;set hidden? true
     ]
   ]
 end
@@ -418,25 +394,26 @@ to go-lions
     ;; -------- Status 0: relax --------
     if status = 0 [
       rt random-int-between -10 10
-      let possiblewildebeest one-of wildebeests in-radius detection-radius
+      let possiblewildebeest one-of wildebeests  with [status = 1] in-radius detection-radius
       if possiblewildebeest != nobody and firsttimeattack? [
         face possiblewildebeest
+        ;fd 0.02
         set status 1
       ]
     ]
 
     ;; -------- Status 1: alerted --------
     if status = 1 [
-      ;; cerca uno gnu entro raggio 50
+;      ;; cerca uno gnu entro raggio 50
       let possiblewildebeest one-of wildebeests with [status = 1] in-radius detection-radius
       ifelse possiblewildebeest != nobody and firsttimeattack? [
         ;; orientati verso lo gnu
         face possiblewildebeest
         fd 0.02
-        ;; avanza lentamente solo se lo gnu è su acqua
+;        ;; avanza lentamente solo se lo gnu è su acqua
 
 
-        ;; se trovi uno gnu isolato (meno di 3 nel raggio 2) entro 12 passi, vai a targeting
+        ;; se trovi uno gnu isolato (meno di 3 nel raggio 2) entro 15 passi, vai a targeting
         let targeting-radius ifelse-value day [
           ifelse-value high-grass [15] [25]
         ][
@@ -447,40 +424,12 @@ to go-lions
           face probablewildebeest
           set status 2
         ]
-      ] [
-        ;; se lo gnu è sparito, torna a relax
-        set status 0
-      ]
-    ]
+    ][set status 0
+    ]]
 
-    ;; -------- Status 2: targeting --------
+    ;; -------- Status 2: attack --------
     if status = 2 [
-       let targeting-radius ifelse-value day [
-        ifelse-value high-grass [25] [40]
-      ][
-        ifelse-value high-grass [25] [40]
-      ]
-      let prey one-of wildebeests in-radius targeting-radius
-      ifelse prey != nobody and firsttimeattack? [
-        face prey
-        fd 0.01
-        set status 3
-      ]  [
-        set waitingtime waitingtime + 1
-        if one-of wildebeests in-radius 5 = nobody [
-          set status 1
-        ]
-        if waitingtime > 100 [
-          set status 1
-          set waitingtime 0
-        ]
-      ]
-    ]
-
-    ;; -------- Status 3: attack --------
-    if status = 3 [
-      set lionsattacks lionsattacks + 1
-      set waitingtime waitingtime + 1
+       set waitingtime waitingtime + 1
       set color yellow
 
       let base-speed 0.017
@@ -502,7 +451,7 @@ to go-lions
         if [distance myself] of prey < 1 [
           ask prey [ die ]
           set wildebeestseatenbylions wildebeestseatenbylions + 1
-          set status 4
+          set status 3
         ]
 
         while [status = 3 and waitingtime < 50] [
@@ -513,12 +462,11 @@ to go-lions
           set status 0
         ]
       ]  [
-        set status 2
+        set status 1
       ]
     ]
-
-    ;; -------- Status 4: satiated --------
-    if status = 4 [
+    ;; -------- Status 3: satiated --------
+    if status = 3 [
       set color orange
       set firsttimeattack? false
       rt random-int-between -10 10
@@ -549,7 +497,10 @@ ask lionesses [
       ;; cerco uno gnù in status 1 (vicino all'acqua) entro raggio 50
       let prey-lionesses one-of wildebeests in-radius detection-radius with [status = 1]
       if prey-lionesses != nobody and firsttimeattack?[
-        set status 1         ;; passo ad allerta
+        ask lionesses[
+          set status 1
+          ]
+        ;set status 1         ;; passo ad allerta
         face prey-lionesses
       ]
     ]
@@ -593,7 +544,6 @@ ask lionesses [
     ; Status 3: tenta di uccidere
     if status = 3 [
       ; tenta di uccidere
-      set lionsattacks (lionsattacks + 1)
       set waitingtime waitingtime + 1
 
        ;; ------------------------------------------------------------------
@@ -625,7 +575,7 @@ ask lionesses [
             ask lionesses [
               set status 0
             ]
-            set wildebeestseatenbylions wildebeestseatenbylions + 1
+            set wildebeestseatenbylionesses wildebeestseatenbylionesses + 1
             set group-target nobody
             set status 4
           ]
@@ -755,17 +705,6 @@ to-report on-water?
 
 end
 
-to-report between-rivers?
-  let margin 2
-  report (not on-water?)
-     and pycor < (upper-river - margin)
-     and pycor > (lower-river + margin)
-end
-
-
-to-report on-depth-water?
-  report (shade-of? pcolor blue)
-end
 to-report dead? [agent]
   report not member? agent turtles
 end
@@ -797,26 +736,11 @@ GRAPHICS-WINDOW
 ticks
 30.0
 
-SLIDER
-0
-10
-172
-43
-wildebeests-number
-wildebeests-number
-0
-100
-43.0
-1
-1
-NIL
-HORIZONTAL
-
 BUTTON
-700
-10
-763
-43
+0
+361
+167
+394
 Setup
 setup
 NIL
@@ -830,10 +754,10 @@ NIL
 1
 
 BUTTON
-760
-10
-823
-43
+0
+401
+167
+434
 Go
 go
 T
@@ -848,20 +772,20 @@ NIL
 
 SWITCH
 0
-44
-103
 77
+172
+110
 lions?
 lions?
-1
+0
 1
 -1000
 
 SWITCH
 0
-184
-120
-217
+206
+171
+239
 high-grass
 high-grass
 1
@@ -871,39 +795,152 @@ high-grass
 SWITCH
 0
 114
-106
+171
 147
 lionesses?
 lionesses?
+1
+1
+-1000
+
+SWITCH
+0
+246
+170
+279
+day
+day
 0
 1
 -1000
 
+TEXTBOX
+707
+12
+884
+57
+Information and Plots area:
+14
+0.0
+1
+
 SLIDER
 0
-151
-121
-184
-lionesses-number
-lionesses-number
-2
-6
-3.0
+39
+172
+72
+wildebeests-number
+wildebeests-number
+0
+100
+43.0
 1
 1
 NIL
 HORIZONTAL
 
-SWITCH
-0
-224
-103
-257
-day
-day
-0
+TEXTBOX
+6
+10
+156
+28
+Animals Parameters:
+14
+0.0
 1
--1000
+
+MONITOR
+708
+50
+804
+95
+# wildebeests 
+count wildebeests
+17
+1
+11
+
+MONITOR
+817
+50
+916
+95
+# lions
+count lions
+17
+1
+11
+
+MONITOR
+929
+50
+1019
+95
+# lionesses
+count lionesses
+17
+1
+11
+
+MONITOR
+709
+107
+804
+152
+# lions kills
+wildebeestseatenbylions
+17
+1
+11
+
+MONITOR
+819
+107
+918
+152
+# lionesses kill
+wildebeestseatenbylionesses
+17
+1
+11
+
+PLOT
+710
+162
+997
+401
+Wildebeests
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count wildebeests"
+
+TEXTBOX
+0
+174
+150
+192
+Scenario Parameters:
+14
+0.0
+1
+
+TEXTBOX
+0
+329
+150
+347
+Simulation Actions:\n
+14
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1268,6 +1305,32 @@ NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="lions-HD" repetitions="10" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="9000"/>
+    <metric>wildebeests-number - count wildebeests</metric>
+    <enumeratedValueSet variable="day">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses-number">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wildebeests-number">
+      <value value="43"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="high-grass">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lions?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses?">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
