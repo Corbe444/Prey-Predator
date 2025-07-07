@@ -224,26 +224,26 @@ to go-wildebeests
       ifelse high-grass [
         ;; caso “erba alta”
         ifelse day [
-          ;; erba alta + giorno
+          ;; erba alta + giorno ;19
           if any? (turtle-set lions lionesses) in-radius 15 [
             set status 2
           ]
         ] [
-          ;; erba alta + notte
-          if any? (turtle-set lions lionesses) in-radius 10 [
+          ;; erba alta + notte ;34
+          if any? (turtle-set lions lionesses) in-radius 14 [
             set status 2
           ]
         ]
       ] [
         ;; caso “non erba alta”
         ifelse day [
-          ;; erba bassa + giorno
-          if any? (turtle-set lions lionesses) in-radius 20 [
+          ;; erba bassa + giorno ;12
+          if any? (turtle-set lions lionesses) in-radius 19 [
             set status 2
           ]
         ] [
-          ;; erba bassa + notte
-          if any? (turtle-set lions lionesses) in-radius 13 [
+          ;; erba bassa + notte ;(non provata)
+          if any? (turtle-set lions lionesses) in-radius 17 [
             set status 2
           ]
         ]
@@ -307,7 +307,7 @@ to go-wildebeests
           set firsttimeattacked? false
         ] [
           ;set heading (heading + random-int-between -10 10)
-          let base-speed       0.025         ;; velocità massima
+          let base-speed       0.023         ;; velocità massima
           let slowdown-start   200          ;; quanti tick restare al massimo
           let slowdown-end     500          ;; tick in cui si raggiunge la minima
           let min-speed        0.01         ;; non scendere oltre questo
@@ -788,7 +788,7 @@ SWITCH
 239
 high-grass
 high-grass
-1
+0
 1
 -1000
 
@@ -810,7 +810,7 @@ SWITCH
 279
 day
 day
-0
+1
 1
 -1000
 
@@ -1306,6 +1306,27 @@ NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
+  <experiment name="lions-LD" repetitions="10" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="9000"/>
+    <metric>wildebeests-number - count wildebeests</metric>
+    <enumeratedValueSet variable="day">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wildebeests-number">
+      <value value="43"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="high-grass">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lions?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses?">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
   <experiment name="lions-HD" repetitions="10" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
@@ -1314,8 +1335,68 @@ NetLogo 6.4.0
     <enumeratedValueSet variable="day">
       <value value="true"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="lionesses-number">
-      <value value="3"/>
+    <enumeratedValueSet variable="wildebeests-number">
+      <value value="43"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="high-grass">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lions?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses?">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lions-HD100" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="9000"/>
+    <metric>wildebeests-number - count wildebeests</metric>
+    <enumeratedValueSet variable="day">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wildebeests-number">
+      <value value="43"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="high-grass">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lions?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses?">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lions-HN100" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="9000"/>
+    <metric>wildebeests-number - count wildebeests</metric>
+    <enumeratedValueSet variable="day">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wildebeests-number">
+      <value value="43"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="high-grass">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lions?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses?">
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lions-LN100" repetitions="18" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="9000"/>
+    <metric>wildebeests-number - count wildebeests</metric>
+    <enumeratedValueSet variable="day">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wildebeests-number">
       <value value="43"/>
