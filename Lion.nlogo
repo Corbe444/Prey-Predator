@@ -323,7 +323,7 @@ to go-wildebeests
           fd speed
         ]
         ; if no more hungry lions near to you --> pursuit until reach again the herd
-        if count lions  with [status != 4] in-radius 10 < 1 and count lionesses  with [status != 4] in-radius 10 < 1[
+        if count lions in-radius 10 < 1 and count lionesses in-radius 10 < 1[
           ; pursuit mode
           set status 3
           set firsttimeattacked? true
@@ -337,7 +337,7 @@ to go-wildebeests
         face patch (random-int-between -120 0) -120
         to-flock 3 2 5 4 ;min-sep, sep, ali, coh
         fd 0.015
-        if (count lions in-radius 30 < 1) [
+        if (count lions in-radius 30 < 1 and count lionesses in-radius 30 < 1) [
          ;set color black
          set status 4
         ]
@@ -777,7 +777,7 @@ SWITCH
 110
 lions?
 lions?
-0
+1
 1
 -1000
 
@@ -788,7 +788,7 @@ SWITCH
 239
 high-grass
 high-grass
-0
+1
 1
 -1000
 
@@ -799,7 +799,7 @@ SWITCH
 147
 lionesses?
 lionesses?
-1
+0
 1
 -1000
 
@@ -810,7 +810,7 @@ SWITCH
 279
 day
 day
-1
+0
 1
 -1000
 
