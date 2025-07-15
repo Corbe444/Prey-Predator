@@ -207,7 +207,7 @@ to go-wildebeests
   ]
 
     ask wildebeests [
-    ifelse status != 5 [
+    ifelse status != 4 [
       ; if not hidden (job done status)
       ; Eevasive wildebeest that change to status 2 cause finish to cross the river and forget to be in status 4
       if color = violet - 1 [
@@ -224,8 +224,8 @@ to go-wildebeests
       ifelse high-grass [
         ;; caso “erba alta”
         ifelse day [
-          ;; erba alta + giorno ;19
-          if any? (turtle-set lions lionesses) in-radius 15 [
+          ;; erba alta + giorno ;28
+          if any? (turtle-set lions lionesses) in-radius 14 [
             set status 2
           ]
         ] [
@@ -237,13 +237,17 @@ to go-wildebeests
       ] [
         ;; caso “non erba alta”
         ifelse day [
-          ;; erba bassa + giorno ;12
-          if any? (turtle-set lions lionesses) in-radius 19 [
+          ;; erba bassa + giorno ;9
+          if any?  lions in-radius 19 [
+            set status 2
+          ]
+          ;; erba bassa + giorno ;29
+          if any?  lionesses in-radius 14 [
             set status 2
           ]
         ] [
           ;; erba bassa + notte ;(non provata)
-          if any? (turtle-set lions lionesses) in-radius 17 [
+          if any? (turtle-set lions lionesses) in-radius 14 [
             set status 2
           ]
         ]
@@ -344,8 +348,10 @@ to go-wildebeests
 
 
     ]
-      if status = 4 [
-        if (not any? wildebeests with [status = 2 or status = 3]) [
+
+
+    ][
+      ifelse (not any? wildebeests with [status = 2 or status = 3]) [
           set color black
           set target patch (random-int-between -120 0) -120
           face target
@@ -353,16 +359,12 @@ to go-wildebeests
           to-flock 3 2 5 4  ;min-sep, sep, ali, coh
           fd 0.01
 
-        ]
-    ]
+
     ][
+        set status 3
+      ]
 
 
-      ;face patch (random-int-between -120 0) -120
-      to-flock 0 2 5 4 ;min-sep, sep, ali, coh
-      fd 0.015
-      ;set heading 180 + (random-float wiggle-ampl * 2 - wiggle-ampl)
-      ;set hidden? true
     ]
   ]
 end
@@ -525,29 +527,29 @@ ask lionesses [
         set status 0
       ]
     ]
+;    if status = 5 [
+;      ifelse group-target != nobody and distance group-target < 40 and firsttimeattack? [
+;        face group-target
+;        fd 0.01
+;        set status 3
+;      ] [
+;        set waitingtime waitingtime + 1
+;        if one-of wildebeests in-radius 5 = nobody [
+;          set status 1
+;        ]
+;        if waitingtime > 100 [
+;          set status 1
+;          set waitingtime 0
+;        ]
+;      ]
+;    ]
+    ; Status 2: tenta di uccidere
     if status = 2 [
-      ifelse group-target != nobody and distance group-target < 40 and firsttimeattack? [
-        face group-target
-        fd 0.01
-        set status 3
-      ] [
-        set waitingtime waitingtime + 1
-        if one-of wildebeests in-radius 5 = nobody [
-          set status 1
-        ]
-        if waitingtime > 100 [
-          set status 1
-          set waitingtime 0
-        ]
-      ]
-    ]
-    ; Status 3: tenta di uccidere
-    if status = 3 [
       ; tenta di uccidere
       set waitingtime waitingtime + 1
 
        ;; ------------------------------------------------------------------
-      let base-speed       0.02         ;; velocità massima
+      let base-speed       0.017         ;; velocità massima
       let slowdown-start   1500           ;; quanti tick restare al massimo
       let slowdown-end     2500          ;; tick in cui si raggiunge la minima
       let min-speed        0.005         ;; non scendere oltre questo
@@ -577,7 +579,7 @@ ask lionesses [
             ]
             set wildebeestseatenbylionesses wildebeestseatenbylionesses + 1
             set group-target nobody
-            set status 4
+            set status 3
           ]
         ] [
           ; la preda è già morta
@@ -612,7 +614,7 @@ ask lionesses [
 
 
     ; Status 4: sazio, allontanati
-    if status = 4 [
+    if status = 3 [
       set color orange
       set firsttimeattack? false
     ]
@@ -831,9 +833,9 @@ SLIDER
 72
 wildebeests-number
 wildebeests-number
-0
+20
 100
-43.0
+44.0
 1
 1
 NIL
@@ -1306,7 +1308,7 @@ NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="lions-LD" repetitions="10" runMetricsEveryStep="true">
+  <experiment name="lions-LD" repetitions="100" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <timeLimit steps="9000"/>
@@ -1409,6 +1411,27 @@ NetLogo 6.4.0
     </enumeratedValueSet>
     <enumeratedValueSet variable="lionesses?">
       <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lionesses-LD" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="8000"/>
+    <metric>wildebeests-number - count wildebeests</metric>
+    <enumeratedValueSet variable="day">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wildebeests-number">
+      <value value="44"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="high-grass">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lions?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses?">
+      <value value="true"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
