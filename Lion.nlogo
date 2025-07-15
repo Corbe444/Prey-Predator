@@ -2,20 +2,15 @@
 ;Global variables:
 ; - wildebeestseatenbylions: number of wildebeests eaten by lions
 ; - wildebeestsdrowned: number of wildebeests drowned
-; - cont: variable to count the number of sub-heards until reaching the full herd size
-; - crowding?: is time to flocking crowding to the river banks while waiting for the leaders choice?
 ; - firstleader?: is the wildebeest a hypotetic first leader?
-; - approachpoint: river approach point for the herd (first leader choose it)
 
-globals [escape-heading wildebeestseatenbylions wildebeestseatenbylionesses  cont crowding? firstleader? approachpoint ]
+globals [escape-heading wildebeestseatenbylions wildebeestseatenbylionesses firstleader? ]
 ;Define new turtle breed: Wildebeest, Lions
 breed [wildebeests wildebeest] ;[plural singolar]
 breed [lions lion]
 breed [lionesses lioness ]
 ; Wildebeests-only characteristics:
 ; - target: their prior target before following each other
-; - waitforleadership: counter to force wildebeests to wait until some wildebeest choose to be leader
-; - leadership?: leader or not leader?
 ; - flockmates, nearest-neighbor: flocking parameters
 ; - status: movement status of the wildebeest:
 ;           0 - before the river: flocking as a compact herd
@@ -29,7 +24,7 @@ breed [lionesses lioness ]
 ; - timealone: time alone in water
 ; - firstimeatacked?: is the first time (of each attack) that the wildebeest notice the predator?
 ; Assumption: a wildebeest die if spend to much time alone (herd effect)
-wildebeests-own [target waitforleadership leadership? flockmates nearest-neighbor status firsttimeattacked? tutti? waitingtime wiggle-ampl]
+wildebeests-own [target flockmates nearest-neighbor status firsttimeattacked? tutti? waitingtime wiggle-ampl]
 lions-own [status waitingtime accelerationtime firsttimeattack?]
 lionesses-own [status waitingtime accelerationtime flockmates nearest-neighbor group-target firsttimeattack?]
 
@@ -41,21 +36,13 @@ to setup
   ; Remove old agents
   clear-all
   ask patches [ set pcolor brown + 2 ]
-
   ;background
   import-background
-
-  ; Define wildebeests default area
-  ;let patches-in-box patches with [pxcor > 100 and pycor < -100 ] ;100 -100
-  ; Set number of initial sub-group (100k each subgroup) of wildebeests
-  set cont 1
   let patches-in-box patches with [pxcor > -15 and pxcor < 15 and pycor < -60 and pycor > -80] ;100 -100
   ;box leonesse
   let patches-in-box-lionesses patches with [pxcor > 42 and pxcor < 46 and pycor < -12 and pycor > -15] ;100 -100
   ; Call to wildebeests generator with default area as parameter
   wildebeest-generator (patches-in-box)
-  ; Set crowding? as initially false
-  set crowding? false
   ; Set firstleader? as initially false
   set firstleader? true
   ; Call to lions generator
@@ -66,10 +53,7 @@ to setup
   reset-ticks
 end
 
-
-
 ;; genera un gruppo di gnu fra i due fiumi
-; Generate wildebeest and distribute them normally in the bottom-right corner
 to wildebeest-generator [box]
   ; Default shape for wildebeests agent
   set-default-shape wildebeests "cow"
@@ -94,9 +78,6 @@ to wildebeest-generator [box]
       set color black
       ][set color gray - 3]
       set status 0
-      set waitforleadership 0
-      ; Default leadership value --> no default leaders, choosen at the crossing moment
-      set leadership? false
       set tutti? true
 
       set firsttimeattacked? true
@@ -118,8 +99,6 @@ to wildebeest-generator [box]
 ]
 
 end
-
-
 
 
 to lions-generator
@@ -172,9 +151,6 @@ end
 
 ;-------------------------------- SETUP --------------------------------
 
-
-
-
 to import-background
   import-pcolors "img/GrumetiDL.png"
   if high-grass[
@@ -225,12 +201,15 @@ to go-wildebeests
         ;; caso “erba alta”
         ifelse day [
           ;; erba alta + giorno ;28
-          if any? (turtle-set lions lionesses) in-radius 14 [
+          if any? lions in-radius 14 [
+            set status 2
+          ]
+          if any? lionesses in-radius 13 [
             set status 2
           ]
         ] [
           ;; erba alta + notte ;34
-          if any? (turtle-set lions lionesses) in-radius 14 [
+          if any? (turtle-set lions lionesses) in-radius 13 [
             set status 2
           ]
         ]
@@ -242,12 +221,12 @@ to go-wildebeests
             set status 2
           ]
           ;; erba bassa + giorno ;29
-          if any?  lionesses in-radius 14 [
+          if any?  lionesses in-radius 13 [
             set status 2
           ]
         ] [
-          ;; erba bassa + notte ;(non provata)
-          if any? (turtle-set lions lionesses) in-radius 14 [
+          ;; erba bassa + notte ;
+          if any? (turtle-set lions lionesses) in-radius 13 [
             set status 2
           ]
         ]
@@ -370,12 +349,8 @@ to go-wildebeests
 end
 
 ;--------------------------------------------------------------------------------------------
-
-
-; Go function for lions
 to go-lions
   ask lions [
-    ; Assumption: no lions on water
     ;; Solo quando il leone è su acqua
     if on-water? [
       ;; Controlla il patch che sta a 1 passo davanti
@@ -484,14 +459,14 @@ to go-lionesses
   let target-prey one-of wildebeests
   if target-prey != nobody [
 
-  ask lionesses [
-    set group-target target-prey
+    ask lionesses [
+      set group-target target-prey
+    ]
   ]
-]
 
 
-let detection-radius ifelse-value high-grass  [35] [50]
-ask lionesses [
+  let detection-radius ifelse-value high-grass  [35] [50]
+  ask lionesses [
 
 
     ;; prima di qualsiasi movimento, controllo il patch-ahead:
@@ -501,8 +476,7 @@ ask lionesses [
       if prey-lionesses != nobody and firsttimeattack?[
         ask lionesses[
           set status 1
-          ]
-        ;set status 1         ;; passo ad allerta
+        ]
         face prey-lionesses
       ]
     ]
@@ -519,7 +493,7 @@ ask lionesses [
         if probablewildebeest != nobody and firsttimeattack? [
           face probablewildebeest
           ask lionesses[
-          set status 2
+            set status 2
           ]
         ]
       ][
@@ -527,28 +501,12 @@ ask lionesses [
         set status 0
       ]
     ]
-;    if status = 5 [
-;      ifelse group-target != nobody and distance group-target < 40 and firsttimeattack? [
-;        face group-target
-;        fd 0.01
-;        set status 3
-;      ] [
-;        set waitingtime waitingtime + 1
-;        if one-of wildebeests in-radius 5 = nobody [
-;          set status 1
-;        ]
-;        if waitingtime > 100 [
-;          set status 1
-;          set waitingtime 0
-;        ]
-;      ]
-;    ]
     ; Status 2: tenta di uccidere
     if status = 2 [
       ; tenta di uccidere
       set waitingtime waitingtime + 1
 
-       ;; ------------------------------------------------------------------
+      ;; ------------------------------------------------------------------
       let base-speed       0.017         ;; velocità massima
       let slowdown-start   1500           ;; quanti tick restare al massimo
       let slowdown-end     2500          ;; tick in cui si raggiunge la minima
@@ -779,7 +737,7 @@ SWITCH
 110
 lions?
 lions?
-1
+0
 1
 -1000
 
@@ -790,7 +748,7 @@ SWITCH
 239
 high-grass
 high-grass
-1
+0
 1
 -1000
 
@@ -801,7 +759,7 @@ SWITCH
 147
 lionesses?
 lionesses?
-0
+1
 1
 -1000
 
@@ -1426,6 +1384,27 @@ NetLogo 6.4.0
     </enumeratedValueSet>
     <enumeratedValueSet variable="high-grass">
       <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lions?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="lionesses?">
+      <value value="true"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lionesses-HD" repetitions="100" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="8000"/>
+    <metric>wildebeests-number - count wildebeests</metric>
+    <enumeratedValueSet variable="day">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wildebeests-number">
+      <value value="44"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="high-grass">
+      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="lions?">
       <value value="false"/>
